@@ -77,8 +77,8 @@ endif()
 
 # default the build type to release
 if (NOT CMAKE_BUILD_TYPE)
-    message(STATUS "No build type selected, default to Debug")
-    set(CMAKE_BUILD_TYPE "Debug")
+    message(STATUS "No build type selected, default to Release")
+    set(CMAKE_BUILD_TYPE "Release")
 endif()
 
 # get version str from git
@@ -133,18 +133,26 @@ link_directories(
 add_executable(ds_generator
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_gen_main.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_generator.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_pipeline.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_tiling.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_parallel.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_bitwidth_opt.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/dse_utils/dse_utils.cpp"
 )
-
+add_dependencies(ds_generator JsonCPP)
 
 add_executable(ds_generator_test
     "${CMAKE_CURRENT_SOURCE_DIR}/unit_test/unit_test.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_generator.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_pipeline.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_tiling.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_parallel.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_bitwidth_opt.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/dse_utils/dse_utils.cpp"
 )
-add_test(NAME dsgen_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test_ds_generator)
+add_dependencies(ds_generator_test JsonCPP)
 
-add_dependencies(ds_generator JsonCPP)
+add_test(NAME dsgen_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test_ds_generator)
 
 set_target_properties(ds_generator PROPERTIES
     LINKER_LANGUAGE CXX
