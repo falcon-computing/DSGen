@@ -71,6 +71,16 @@ void DsGenerator::BuildBitWidthOpt(void *kernel) {
     if (set_ignored.find(argName) != set_ignored.end())
       continue;
 
+    void *arr;
+    vector<void *> arr_indices;
+    SgArrayType *arr_type = (SgArrayType *)ptype;
+    SgExpression *arr_idx = arr_type->get_index();
+    CMarsExpression arr_size(arr_idx, &m_ast);
+    if (!arr_size.IsConstant())
+      continue;
+    if (arr_size.GetConstant() < 512)
+      continue;
+
     // Only explore the min (do nothing) and the max (coalescing)
     string options = "[x for x in [32, 512]]";
     int default_val = 32;
