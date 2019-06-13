@@ -16,7 +16,8 @@
 /// sorts are pipleline <-- tiling <-- parallel.
 //
 //===----------------------------------------------------------------------===//
-
+#ifndef DS_GENERATOR_H_
+#define DS_GENERATOR_H_
 #include <time.h>
 #include <sys/time.h>
 #include <iterator>
@@ -249,3 +250,4 @@ class DsGenerator {
 
 int ds_generator_top(CSageCodeGen &m_ast, void *pTopFunc,
                     CInputOptions &options);
+#endif

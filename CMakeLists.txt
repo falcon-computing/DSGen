@@ -111,11 +111,19 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_DATE=\"\\\"${BUILD_DATE}\"\\\"")
 set(CMAKE_CXX_FLAGS_DEBUG "-DPROJDEBUG=1 -std=c++14 -O0 -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "-DPROJDEBUG=1 -std=c++14 -O3")
 
+option(COVERAGE "Build with coverage report" OFF)
+if(COVERAGE)
+    set(CMAKE_BUILD_TYPE Debug)
+    set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+    set(CMAKE_EXE_LINKER_FLAGS
+    "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+endif()
+
 # Let's dump all the useful artifacts in build/bin
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 include_directories(
-    "${CMAKE_CURRENT_SOURCE_DIR}/dse_utils"
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${ROSE_ROOT_DIR}/include/rose"
@@ -137,22 +145,22 @@ add_executable(ds_generator
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_tiling.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_parallel.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_bitwidth_opt.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/dse_utils/dse_utils.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/dse_utils.cpp"
 )
 add_dependencies(ds_generator JsonCPP)
 
 add_executable(ds_generator_test
-    "${CMAKE_CURRENT_SOURCE_DIR}/unit_test/unit_test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_generator.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_pipeline.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_tiling.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_parallel.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_bitwidth_opt.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/dse_utils/dse_utils.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/dse_utils.cpp"
 )
 add_dependencies(ds_generator_test JsonCPP)
 
-add_test(NAME dsgen_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test_ds_generator)
+add_test(NAME dsgen_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/bin/ds_generator ${CMAE_CURRENT_SOURCE_DIR}/test/black_euro/black_euro.cpp)
 
 set_target_properties(ds_generator PROPERTIES
     LINKER_LANGUAGE CXX
@@ -204,3 +212,13 @@ target_link_libraries(ds_generator_test
   ${CMAKE_DL_LIBS} 
   ${CMAKE_THREAD_LIBS_INIT}
 )
+
+#set(CMAKE_CXX_FLAGS_DEBUG "-DPROJDEBUG=1 -std=c++14 -O0 -ggdb")
+#set(CMAKE_CXX_FLAGS_RELEASE "-DPROJDEBUG=1 -std=c++14 -O3")
+
+enable_testing()
+
+# run code coverage
+add_custom_target(coverage
+    COMMAND lcov --no-external --directory ${PROJECT_SOURCE_DIR}/src/ --base-directory ${PROJECT_SOURCE_DIR}/build/ --gcov-tool ${PROJECT_SOURCE_DIR}/llvm-gcov.sh --capture -o mc.info
+    COMMAND genhtml mc.info -o output)
