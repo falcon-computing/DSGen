@@ -124,7 +124,9 @@ endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 include_directories(
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/merlin"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/merlin/legacy/ir"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/merlin/legacy/parsers"
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${ROSE_ROOT_DIR}/include/rose"
     "${JsonCPP_INCLUDE_DIRS}"
@@ -159,8 +161,6 @@ add_executable(ds_generator_test
     "${CMAKE_CURRENT_SOURCE_DIR}/src/dse_utils.cpp"
 )
 add_dependencies(ds_generator_test JsonCPP)
-
-add_test(NAME dsgen_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/bin/ds_generator ${CMAE_CURRENT_SOURCE_DIR}/test/black_euro/black_euro.cpp)
 
 set_target_properties(ds_generator PROPERTIES
     LINKER_LANGUAGE CXX
@@ -213,12 +213,11 @@ target_link_libraries(ds_generator_test
   ${CMAKE_THREAD_LIBS_INIT}
 )
 
-#set(CMAKE_CXX_FLAGS_DEBUG "-DPROJDEBUG=1 -std=c++14 -O0 -ggdb")
-#set(CMAKE_CXX_FLAGS_RELEASE "-DPROJDEBUG=1 -std=c++14 -O3")
-
 enable_testing()
+add_test(NAME ds_generator_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/bin/ds_generator_test -I${CMAKE_CURRENT_SOURCE_DIR}/test/aes/common ${CMAKE_CURRENT_SOURCE_DIR}/test/aes/aes.cpp)
+
 
 # run code coverage
 add_custom_target(coverage
-    COMMAND lcov --no-external --directory ${PROJECT_SOURCE_DIR}/src/ --base-directory ${PROJECT_SOURCE_DIR}/build/ --gcov-tool ${PROJECT_SOURCE_DIR}/llvm-gcov.sh --capture -o mc.info
+    COMMAND lcov --no-external --directory ${PROJECT_SOURCE_DIR} --base-directory ${PROJECT_SOURCE_DIR}/build/ --gcov-tool ${PROJECT_SOURCE_DIR}/llvm-gcov.sh --capture -o mc.info
     COMMAND genhtml mc.info -o output)

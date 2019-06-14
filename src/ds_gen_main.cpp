@@ -23,16 +23,6 @@ int main(int argc, char* argv[]) {
   for (int i = 1; i < options.get_option_num(""); i++) {
     string s_file = options.get_option("", i);
     string ext = s_file.substr(s_file.find(".") + 1);
-    if (ext == "cl") {
-      string s_file_org = s_file;
-      s_file = s_file.substr(0, s_file.find(".")) + ".c";
-      string cmd = "cp " + s_file_org + " " + s_file;
-      ret = system(cmd.c_str());
-      if (ret != 0) {
-        fprintf(stderr, "Error: command %s failed\n", cmd.c_str());
-        exit(ret);
-      }
-    }
     vec_src_list.push_back(s_file);
   }
 

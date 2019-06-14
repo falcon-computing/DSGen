@@ -78,41 +78,41 @@ map<string, void*> DsGeneratorTest::CollectLoops(CSageCodeGen &m_ast,
 }
 
 // bug if this enabled next frondend will have SIGABRT
-//TEST_F(DsGeneratorTest, InitScopePragmas) {
-//  CSageCodeGen m_ast;
-//  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""));
-//  EXPECT_FALSE(dg.InitScopePragmas());
-//  PragmaMap &map_scope_pragmas = dg.GetMapScopePragmas();
-//  for (auto &scope_pragmas: map_scope_pragmas) {
-//    auto pragmas = scope_pragmas.second;
-//    if (pragmas->exist(PIPELINE)) {
-//      auto pipeline_pragma_info =
-//        boost::any_cast<PragmaInfo<string> *>(pragmas->get(PIPELINE));
-//      SgPragma *pipeline_pragma = (SgPragma *)pipeline_pragma_info->pragma;
-//      if (m_ast.is_floating_node(pipeline_pragma)) {
-//        delete pipeline_pragma;
-//      }
-//    }
-//
-//    if (pragmas->exist(TILING)) {
-//      auto tiling_pragma_info =
-//        boost::any_cast<PragmaInfo<int> *>(pragmas->get(TILING));
-//      SgPragma *tiling_pragma = (SgPragma *)tiling_pragma_info->pragma;
-//      if (m_ast.is_floating_node(tiling_pragma)) {
-//        delete tiling_pragma;
-//      }
-//    }
-//
-//    if (pragmas->exist(PARALLEL)) {
-//      auto parallel_pragma_info =
-//        boost::any_cast<PragmaInfo<int> *>(pragmas->get(PARALLEL));
-//      SgPragma *parallel_pragma = (SgPragma *)parallel_pragma_info->pragma;
-//      if (m_ast.is_floating_node(parallel_pragma)) {
-//        delete parallel_pragma;
-//      }
-//    }
-//  }  
-//}
+TEST_F(DsGeneratorTest, InitScopePragmas) {
+  CSageCodeGen m_ast;
+  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""));
+  EXPECT_FALSE(dg.InitScopePragmas());
+  PragmaMap &map_scope_pragmas = dg.GetMapScopePragmas();
+  for (auto &scope_pragmas: map_scope_pragmas) {
+    auto pragmas = scope_pragmas.second;
+    if (pragmas->exist(PIPELINE)) {
+      auto pipeline_pragma_info =
+        boost::any_cast<PragmaInfo<string> *>(pragmas->get(PIPELINE));
+      SgPragma *pipeline_pragma = (SgPragma *)pipeline_pragma_info->pragma;
+      if (m_ast.is_floating_node(pipeline_pragma)) {
+        delete pipeline_pragma;
+      }
+    }
+
+    if (pragmas->exist(TILING)) {
+      auto tiling_pragma_info =
+        boost::any_cast<PragmaInfo<int> *>(pragmas->get(TILING));
+      SgPragma *tiling_pragma = (SgPragma *)tiling_pragma_info->pragma;
+      if (m_ast.is_floating_node(tiling_pragma)) {
+        delete tiling_pragma;
+      }
+    }
+
+    if (pragmas->exist(PARALLEL)) {
+      auto parallel_pragma_info =
+        boost::any_cast<PragmaInfo<int> *>(pragmas->get(PARALLEL));
+      SgPragma *parallel_pragma = (SgPragma *)parallel_pragma_info->pragma;
+      if (m_ast.is_floating_node(parallel_pragma)) {
+        delete parallel_pragma;
+      }
+    }
+  }  
+}
 
 TEST_F(DsGeneratorTest, GetAllDivisors) {
   CSageCodeGen m_ast;

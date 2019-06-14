@@ -758,10 +758,10 @@ public:
                                  int cross_func = 0, int trace_back = 1);
   void *GetLoopFromIteratorRef(void *sg_var_ref);
   void *GetWhileCondition(void *sg_loop);
-  int64_t get_average_loop_trip_count(void *for_loop,
-                                        t_func_call_path &fn_path, void *scope);
+  int64_t get_average_loop_trip_count(void *for_loop, t_func_call_path &fn_path,
+                                      void *scope);
   int64_t get_average_loop_trip_count(void *pos, void *scope,
-                                        t_func_call_path &fn_path);
+                                      t_func_call_path &fn_path);
   bool get_loop_trip_count_simple(void *sg_loop, int64_t &trip_count);
   int get_loop_trip_count(void *for_loop, int64_t &trip_count,
                           int64_t *trip_count_ub = nullptr);
@@ -2036,6 +2036,7 @@ protected:
   map<pair<void *, void *>, bool> s_read_in_scope_cache;
   map<pair<void *, void *>, bool> s_read_in_scope_fast_cache;
   set<void *> s_def_use_cache;
+  map<void *, vector<void *>> s_g_funcs_cache;
   map<pair<void *, void *>, bool> s_location_cache;
   map<string, string> s_message_metadata_cache;
   map<SgNode *, HistoryMarker> histories;
