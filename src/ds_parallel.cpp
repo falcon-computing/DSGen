@@ -2,6 +2,16 @@
 
 void DsGenerator::BuildParallel(void *scope_stmt,
                                 string loop_id) {
+  bool isFineGrained =
+    isFineGrainedLoop(m_ast, scope_stmt) && 
+    !hasNonFlattenFuncCall(m_ast, scope_stmt);
+  
+  if (is_fine_grain_) {
+    if (!isFineGrained) {
+      return;
+    }
+  }
+
   string pragma_id = "__PARA__" + loop_id;
   if (!UpdateUserSpecifiedPragma(scope_stmt, PARALLEL, pragma_id)) {
     // Build a design space by analyzing loop tripcount

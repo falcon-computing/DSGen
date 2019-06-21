@@ -17,7 +17,6 @@ class DsGeneratorTest : public testing::Test  {
  public:
   DsGeneratorTest() {
     ROSE_INITIALIZE;
-    CInputOptions options;
 
     options.set_flag("-t", 1, 0);
     // options.set_flag("-e", 1);
@@ -26,6 +25,7 @@ class DsGeneratorTest : public testing::Test  {
     options.set_flag("-x", 1, 0);
     options.set_flag("-a", 20, 0);
     options.set_flag("-c", 2, 0);
+    options.set_flag("-fgrain", 1, 0);
     options.set_flag("", 100000, 2);
 
     if (!options.parse(test_argc, test_argv)) {
@@ -51,6 +51,7 @@ class DsGeneratorTest : public testing::Test  {
     }
 
   }
+  CInputOptions options;
   
   map<string, void*> CollectLoops(CSageCodeGen &m_ast, DsGenerator& dg);
 
@@ -80,7 +81,7 @@ map<string, void*> DsGeneratorTest::CollectLoops(CSageCodeGen &m_ast,
 // bug if this enabled next frondend will have SIGABRT
 TEST_F(DsGeneratorTest, InitScopePragmas) {
   CSageCodeGen m_ast;
-  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""));
+  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
   EXPECT_FALSE(dg.InitScopePragmas());
   PragmaMap &map_scope_pragmas = dg.GetMapScopePragmas();
   for (auto &scope_pragmas: map_scope_pragmas) {
@@ -116,7 +117,7 @@ TEST_F(DsGeneratorTest, InitScopePragmas) {
 
 TEST_F(DsGeneratorTest, GetAllDivisors) {
   CSageCodeGen m_ast;
-  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""));
+  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
   vector<int>ret1, ret2, ret3, ret4;
   ret1 = dg.GetAllDivisors(28, 7);
   EXPECT_EQ(1, ret1[0]);
@@ -142,7 +143,7 @@ TEST_F(DsGeneratorTest, GetAllDivisors) {
 
 TEST_F(DsGeneratorTest, AllLoopNodes) {
   CSageCodeGen m_ast;
-  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""));
+  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
 
   vector<CMirNode *> fn_loop_nodes;
   CMarsIr &mars_ir = dg.GetCMarsIr();
@@ -159,7 +160,7 @@ TEST_F(DsGeneratorTest, AllLoopNodes) {
 
 TEST_F(DsGeneratorTest, UpdateUserSpecifiedPragma) {
   CSageCodeGen m_ast;
-  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""));
+  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
   map<string, void *> loops = CollectLoops(m_ast, dg);
 
   void *scope_stmt_1 = loops["__UT_L1"];
@@ -180,7 +181,7 @@ TEST_F(DsGeneratorTest, UpdateUserSpecifiedPragma) {
 
 TEST_F(DsGeneratorTest, SetUserPragmaInfo) {
   CSageCodeGen m_ast;
-  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""));
+  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
   map<string, void *> loops = CollectLoops(m_ast, dg);
 
   void *scope_stmt_1 = loops["__UT_L1"];

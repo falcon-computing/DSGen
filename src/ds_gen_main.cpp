@@ -11,6 +11,7 @@ int main(int argc, char* argv[]) {
   options.set_flag("-x", 1, 0);
   options.set_flag("-a", 20, 0);
   options.set_flag("-c", 2, 0);
+  options.set_flag("-fgrain", 1, 0);
   options.set_flag("", 100000, 2);
 
   if (!options.parse(argc, argv)) {

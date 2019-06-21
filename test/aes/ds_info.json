@@ -1,0 +1,41 @@
+{
+	"__PARA__L0" : 
+	{
+		"default" : 1,
+		"ds_type" : "PARALLEL",
+		"options" : "[x for x in [1,2,4,8,16,32,64,128] if x*__TILE__L0<=4096]",
+		"order" : "0 if x&(x-1)==0 else 1"
+	},
+	"__PIPE__L1" : 
+	{
+		"default" : "off",
+		"ds_type" : "PIPELINE",
+		"options" : "[x for x in ['off','']]"
+	},
+	"__PIPE__L2" : 
+	{
+		"default" : "off",
+		"ds_type" : "PIPELINE",
+		"options" : "[x for x in ['off','','flatten']]",
+		"order" : "0 if x!='flatten' else 1"
+	},
+	"__PIPE__L3" : 
+	{
+		"default" : "off",
+		"ds_type" : "PIPELINE",
+		"options" : "[x for x in ['off','','flatten']]",
+		"order" : "0 if x!='flatten' else 1"
+	},
+	"__PIPE__L4" : 
+	{
+		"default" : "off",
+		"ds_type" : "PIPELINE",
+		"options" : "[x for x in ['off','']]"
+	},
+	"__TILE__L0" : 
+	{
+		"default" : 1,
+		"ds_type" : "TILING",
+		"options" : "[x for x in [1,2,4,8,16,32,64,128,256,512,1024,2048]]"
+	}
+}

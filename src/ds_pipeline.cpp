@@ -12,6 +12,11 @@ void DsGenerator::BuildPipeline(void *scope_stmt,
       !hasNonFlattenFuncCall(m_ast, scope_stmt);
     
     vector<string> options = {"'off'", "''", "'flatten'"};
+    if (is_fine_grain_) {
+      if (!isFineGrained) {
+        return;
+      }
+    }
     if (isFineGrained) {
       options.pop_back();
     }

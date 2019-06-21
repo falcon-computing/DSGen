@@ -214,8 +214,9 @@ target_link_libraries(ds_generator_test
 )
 
 enable_testing()
-add_test(NAME ds_generator_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/bin/ds_generator_test -I${CMAKE_CURRENT_SOURCE_DIR}/test/aes/common ${CMAKE_CURRENT_SOURCE_DIR}/test/aes/aes.cpp)
-
+add_test(NAME unit_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/bin/ds_generator_test -I${CMAKE_CURRENT_SOURCE_DIR}/test/aes/common ${CMAKE_CURRENT_SOURCE_DIR}/test/aes/aes.cpp)
+add_test(NAME fn_test_black_euro COMMAND ${CMAKE_CURRENT_BINARY_DIR}/bin/ds_generator ${CMAKE_CURRENT_SOURCE_DIR}/test/black_euro/black_euro.cpp)
+add_test(NAME fn_test_aes_int COMMAND ${CMAKE_CURRENT_BINARY_DIR}/bin/ds_generator -I${CMAKE_CURRENT_SOURCE_DIR}/test/aes_int/common ${CMAKE_CURRENT_SOURCE_DIR}/test/aes_int/aes_int.cpp)
 
 # run code coverage
 add_custom_target(coverage

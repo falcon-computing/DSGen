@@ -184,13 +184,18 @@ typedef void (DsGenerator::*FnHandler) (void *, string);
 
 class DsGenerator {
  public:
-  DsGenerator(CSageCodeGen &ast, void *pTopFunc) 
+  DsGenerator(CSageCodeGen &ast, void *pTopFunc, CInputOptions &options) 
     : m_ast(ast), 
-      p_top_func_(pTopFunc) {
+      p_top_func_(pTopFunc),
+      options_(options) {
     mars_ir_.get_mars_ir(m_ast, p_top_func_, true);
     mars_ir_v2_.build_mars_ir(m_ast, p_top_func_);
     loop_index_ = 0;
     fout.open("ds_info.json");
+    is_fine_grain_ = options_.get_option("-fgrain") == "on";
+    cout << "=====\n";
+    cout << options_.get_option("-fgrain") << endl;
+    cout << "=====\n";
   }
   virtual ~DsGenerator() {
     for (auto item: map_scope_pragmas_) {
@@ -242,8 +247,10 @@ class DsGenerator {
   PragmaMap map_scope_pragmas_;
   CMarsIr mars_ir_;
   CMarsIrV2 mars_ir_v2_;
+  CInputOptions &options_;
   void *p_top_func_;
   int loop_index_;
+  bool is_fine_grain_;
   std::ofstream fout;
   Json::Value item;
 };

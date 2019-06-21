@@ -319,7 +319,7 @@ int ds_generator_top(CSageCodeGen &m_ast, void *pTopFunc,
   cout << "--=# Design Space Generator Start#=--\n";
   cout << "=====================================================" << endl;
 
-  DsGenerator dg(m_ast, pTopFunc);
+  DsGenerator dg(m_ast, pTopFunc, options);
   dg.InitScopePragmas();
   dg.InsertCreatedPragmasAndOutputJson();
 
