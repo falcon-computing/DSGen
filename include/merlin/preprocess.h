@@ -1,23 +1,30 @@
 #pragma once
 
+#include <map>
+#include <set>
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+
 #include "PolyModel.h"
 #include "cmdline_parser.h"
 #include "file_parser.h"
 #include "mars_opt.h"
+#include "mars_ir.h"
+#include "mars_ir_v2.h"
 #include "tldm_annotate.h"
 #include "xml_parser.h"
-#include <unordered_map>
-#include <unordered_set>
 
 class PreProcess {
-public:
-  CSageCodeGen &m_ast;
+ public:
+  CSageCodeGen *m_ast;
   void *mTopFunc;
-  CInputOptions &mOptions;
+  CInputOptions mOptions;
   CMarsIr mMars_ir;
   CMarsIrV2 mMars_ir_v2;
 
-private:
+ private:
   bool mNaive_tag;
   bool mAuto_fg_tag;
   bool mAltera_flow;
@@ -28,10 +35,11 @@ private:
   bool mValid;
   enum effort mEffort;
   set<string> mHeaderFileReported;
-  unordered_map<string, string> def_directive_map_;
+  std::unordered_map<string, string> def_directive_map_;
 
-public:
-  PreProcess(CSageCodeGen &codegen, void *pTopFunc, CInputOptions &options)
+ public:
+  PreProcess(CSageCodeGen *codegen, void *pTopFunc,
+             const CInputOptions &options)
       : m_ast(codegen), mTopFunc(pTopFunc), mOptions(options),
         mNaive_tag(false), mAuto_fg_tag(false), mAltera_flow(false),
         mXilinx_flow(false), mPure_kernel(false), mValidAltera(true),
@@ -48,23 +56,23 @@ public:
 
   void post_check();
 
-private:
+ private:
   bool replacePipelineFlatten();
   bool replacePipelineFlatten(CMirNode *lnode);
-  bool insertParallelPragma(CMirNode *lnode, set<CMirNode *> &visited);
+  bool insertParallelPragma(CMirNode *lnode, set<CMirNode *> *p_visited);
 
-  // Added by Yuxin, 16-Feb-2016
+  //  Added by Yuxin, 16-Feb-2016
   bool autoFineGrainParallel();
   bool autoFineGrainPipeline();
   bool autoFineGrainParallel(CMirNode *lnode);
 
   void init();
-  void build_mars_ir_v2();
+  void build_mars_ir_v2(bool build_node);
   void clear_mars_ir();
   bool preprocessing();
   bool postprocessing();
   bool processPragma(CMirNode *node, bool flatten_pipe,
-                     set<CMirNode *> &visited);
+                     set<CMirNode *> *p_visited);
 
   bool generateNewPragma(CMirNode *node, bool is_fgpip);
 
@@ -72,13 +80,13 @@ private:
 
   void checkAssertHeader(void *file);
 
-  bool CanonicalizeLoop(map<void *, string> &loop2file,
-                        map<void *, string> &loop2line);
+  bool CanonicalizeLoop(map<void *, string> *p_loop2file,
+                        map<void *, string> *p_loop2line);
 
   bool StandardizeLoop();
 
-  void checkNonCanonicalLoop(map<void *, string> &loop2file,
-                             map<void *, string> &loop2line);
+  void checkNonCanonicalLoop(map<void *, string> *p_loop2file,
+                             map<void *, string> *p_loop2line);
 
   void checkMemberFunction();
 
@@ -88,43 +96,45 @@ private:
 
   /* void CheckKernelFunDeclInHeaders(); */
 
-  void checkLocalVariableWithNonConstantDimension();
+  void PreCheckLocalVariableWithNonConstantDimension();
+  void PostCheckLocalVariableWithNonConstantDimension();
+  void checkLocalVariableWithNonConstantDimension(void *func);
 
   void bool2char();
 
   void checkReferenceType();
 
-  void check_func_decl(CSageCodeGen &codegen, void *pTopFunc);
+  void check_func_decl(CSageCodeGen *codegen, void *pTopFunc);
 
-  void check_old_style(CSageCodeGen &codegen, void *pTopFunc);
+  void check_old_style(CSageCodeGen *codegen, void *pTopFunc);
 
-  void check_user_defined_type_outside_header_file(CSageCodeGen &codegen,
+  void check_user_defined_type_outside_header_file(CSageCodeGen *codegen,
                                                    void *pTopFunc);
 
-  int check_valid_top(CSageCodeGen &codegen, void *pTopFunc);
+  int check_valid_top(CSageCodeGen *codegen, void *pTopFunc);
 
-  int check_kernel_argument_top(CSageCodeGen &codegen, void *pTopFunc);
+  int check_kernel_argument_top(CSageCodeGen *codegen, void *pTopFunc);
 
-  void check_func_inline_legality(CSageCodeGen &codegen, void *pTopFunc);
+  void check_func_inline_legality(CSageCodeGen *codegen, void *pTopFunc);
 
-  void check_single_linear_index(CSageCodeGen &codegen, void *pTopFunc);
+  void check_single_linear_index(CSageCodeGen *codegen, void *pTopFunc);
 
-  void check_identical_indices(CSageCodeGen &codegen, void *pTopFunc);
+  void check_identical_indices(CSageCodeGen *codegen, void *pTopFunc);
 
-  int check_comm_pre(CSageCodeGen &codegen, void *pTopFunc);
+  int check_comm_pre(CSageCodeGen *codegen, void *pTopFunc);
 
-  int remove_dummy_return_top(CSageCodeGen &codegen, void *pTopFunc);
+  int remove_dummy_return_top(CSageCodeGen *codegen, void *pTopFunc);
 
-  void check_kernel_argument(CSageCodeGen &codegen, void *pKernelTop);
+  void check_kernel_argument(CSageCodeGen *codegen, void *pKernelTop);
 
-  int altera_check_kernel_file_limitation(CSageCodeGen &codegen,
+  int altera_check_kernel_file_limitation(CSageCodeGen *codegen,
                                           void *kernel_func, void *sub_func,
-                                          std::set<void *> &visited,
-                                          vector<string> &res);
-  int check_kernel_file_limitation(CSageCodeGen &codegen, void *pKernelTop);
+                                          std::set<void *> *p_visited,
+                                          vector<string> *p_res);
+  int check_kernel_file_limitation(CSageCodeGen *codegen, void *pKernelTop);
 
-  void check_valid_top(CSageCodeGen &codegen, void *func, set<void *> &visited,
-                       int top);
+  void check_valid_top(CSageCodeGen *codegen, void *func,
+                       set<void *> *p_visited, int top);
 
   void check_multiple_nodes();
 
@@ -133,12 +143,12 @@ private:
   int check_interface_change(void *func);
 
   void check_type_definition(void *compound_type_decl);
-  void kernel_list_extraction(CSageCodeGen &codegen, void *pTopFunc);
+  void kernel_list_extraction(CSageCodeGen *codegen, void *pTopFunc);
 
-  int check_function_pointer_top(CSageCodeGen &codegen, void *pTopFunc);
+  int check_function_pointer_top(CSageCodeGen *codegen, void *pTopFunc);
 
-  void check_function_pointer(CSageCodeGen &codegen, void *func,
-                              set<void *> &visited);
+  void check_function_pointer(CSageCodeGen *codegen, void *func,
+                              set<void *> *p_visited);
 
   void check_empty_kernel();
 
@@ -162,16 +172,13 @@ private:
 
   void ExpandDefineDirectiveInPragma();
 
-private:
+ private:
   void ScanDefineDirectives();
   void SetDefineDirectives(string);
   void EmbedRecursiveDefines();
-  void ReplacePragmaDefineMacros();
-  void EvaluatePragmaAttributes();
-  void GetTokens(vector<string> &, string &);
+  int EvaluatePragmaAttributes();
   void ReplaceTokens(vector<string> &, string);
-  void MergeTokens(vector<string> &, string &);
-  bool HasDefNameToken(vector<string> &, unordered_set<string> &);
+  bool HasDefNameToken(vector<string> &, std::unordered_set<string> &);
   bool HasInvalidCalcChar(string &);
   int64_t Calculate(string &);
   int64_t ParseExpr(string &, int &);

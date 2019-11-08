@@ -1,5 +1,8 @@
-#ifndef _BITWIDTH_OPT_H_INCLUDED_
-#define _BITWIDTH_OPT_H_INCLUDED_
+#ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BITWIDTH_OPT_H_
+#define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BITWIDTH_OPT_H_
+#include <vector>
+#include <map>
+#include <string>
 
 #include "rose.h"
 
@@ -16,15 +19,15 @@
 struct MemcpyPort {
   void *array;
   void *pntr;
-  vector<void *> index;
+  std::vector<void *> index;
   int pointer;
   MemcpyPort() {
     array = nullptr;
     pntr = nullptr;
     pointer = 0;
-  };
-  string print() {
-    string res = (pointer ? "pointer" : "array");
+  }
+  std::string print() {
+    std::string res = (pointer ? "pointer" : "array");
     res += " with " + my_itoa(index.size()) + " dimension";
     return res;
   }
@@ -34,10 +37,10 @@ struct MemcpyPort {
 };
 
 struct MemcpyInfo {
-  vector<MemcpyPort> port;
+  std::vector<MemcpyPort> port;
   void *length_exp;
   void *base_type;
-  // read from external memory to local buffer
+  //  read from external memory to local buffer
   bool read;
   int bitwidth;
   int opt_bitwidth;
@@ -45,7 +48,7 @@ struct MemcpyInfo {
   int opt_dimension;
   bool unaligned;
   int aligned;
-  vector<size_t> dimension_size;
+  std::vector<size_t> dimension_size;
   MemcpyInfo() {
     port.resize(2);
     length_exp = nullptr;
@@ -69,7 +72,7 @@ struct MemcpyInfo {
 struct SingleAssignInfo {
   bool read;
   bool write;
-  vector<void *> index;
+  std::vector<void *> index;
   void *arg;
   int opt_bitwidth;
   int bitwidth;
@@ -86,9 +89,9 @@ struct SingleAssignInfo {
 };
 
 struct CallInfo {
-  // a postion of a argument of  a callEE function
+  //  a postion of a argument of  a callEE function
   int pos;
-  // a variable ref of a argument of a callER function
+  //  a variable ref of a argument of a callER function
   void *ref;
 };
 
@@ -101,9 +104,10 @@ struct ArgumentInfo {
   void *base_type;
   int bitwidth;
   int opt_bitwidth;
-  map<void *, vector<CallInfo>> calls2ref;
-  map<void *, MemcpyInfo> memcpy;
-  map<void *, SingleAssignInfo> single_assign;
+  bool specified_bitwidth;
+  std::map<void *, std::vector<CallInfo>> calls2ref;
+  std::map<void *, MemcpyInfo> memcpy;
+  std::map<void *, SingleAssignInfo> single_assign;
   ArgumentInfo() {
     any_burst_access = false;
     short_burst_access = false;
@@ -113,6 +117,7 @@ struct ArgumentInfo {
     base_type = nullptr;
     bitwidth = 0;
     opt_bitwidth = 0;
+    specified_bitwidth = false;
   }
   ArgumentInfo(const ArgumentInfo &info)
       : any_burst_access(info.any_burst_access),
@@ -121,8 +126,8 @@ struct ArgumentInfo {
         suboptimal_coalescing(info.suboptimal_coalescing),
         need_changed(info.need_changed), base_type(info.base_type),
         bitwidth(info.bitwidth), opt_bitwidth(info.opt_bitwidth),
-        calls2ref(info.calls2ref), memcpy(info.memcpy),
-        single_assign(info.single_assign) {}
+        specified_bitwidth(info.specified_bitwidth), calls2ref(info.calls2ref),
+        memcpy(info.memcpy), single_assign(info.single_assign) {}
 };
 
-#endif
+#endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BITWIDTH_OPT_H_

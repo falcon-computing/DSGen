@@ -188,8 +188,8 @@ class DsGenerator {
     : m_ast(ast), 
       p_top_func_(pTopFunc),
       options_(options) {
-    mars_ir_.get_mars_ir(m_ast, p_top_func_, true);
-    mars_ir_v2_.build_mars_ir(m_ast, p_top_func_);
+    mars_ir_.get_mars_ir(&m_ast, p_top_func_, true);
+    mars_ir_v2_.build_mars_ir(&m_ast, p_top_func_);
     loop_index_ = 0;
     fout.open("ds_info.json");
     is_fine_grain_ = options_.get_option("-fgrain") == "on";

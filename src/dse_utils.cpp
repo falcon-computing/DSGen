@@ -138,7 +138,7 @@ bool isFlattenFunction(CSageCodeGen &m_ast, void *func) {
   for (auto loop : vecLoops) {
     CMarsRangeExpr mr = CMarsVariable(loop, &m_ast, func).get_range();
     CMarsExpression lb, ub;
-    int ret = mr.get_simple_bound(lb, ub);
+    int ret = mr.get_simple_bound(&lb, &ub);
     if (!ret)
       return false;
     CMarsExpression range = ub - lb + 1;

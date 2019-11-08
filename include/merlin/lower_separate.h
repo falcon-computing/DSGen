@@ -1,5 +1,5 @@
-#ifndef _BITWIDTH_OPT_H_INCLUDED_
-#define _BITWIDTH_OPT_H_INCLUDED_
+#ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_LOWER_SEPARATE_H_
+#define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_LOWER_SEPARATE_H_
 
 #include "rose.h"
 
@@ -15,4 +15,4 @@
 #include "tldm_annotate.h"
 #include "xml_parser.h"
 
-#endif
+#endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_LOWER_SEPARATE_H_

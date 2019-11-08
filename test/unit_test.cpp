@@ -63,7 +63,7 @@ map<string, void*> DsGeneratorTest::CollectLoops(CSageCodeGen &m_ast,
   map<string, void*> loops;
   vector<CMirNode *> fn_loop_nodes;
   CMarsIr &mars_ir = dg.GetCMarsIr();
-  mars_ir.get_topological_order_nodes(fn_loop_nodes);
+  mars_ir.get_topological_order_nodes(&fn_loop_nodes);
   for (auto &node: fn_loop_nodes) {
     if (node->is_function)
       continue;
@@ -147,7 +147,7 @@ TEST_F(DsGeneratorTest, AllLoopNodes) {
 
   vector<CMirNode *> fn_loop_nodes;
   CMarsIr &mars_ir = dg.GetCMarsIr();
-  mars_ir.get_topological_order_nodes(fn_loop_nodes);
+  mars_ir.get_topological_order_nodes(&fn_loop_nodes);
   for (auto &node: fn_loop_nodes) {
     if (node->is_function)
       continue;
@@ -250,28 +250,24 @@ TEST_F(DsGeneratorTest, SetUserPragmaInfo) {
 }
 
 TEST_F(DsGeneratorTest, GetShadowedParams) {
-  //CSageCodeGen m_ast;
-  //DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""));
-  //map<string, void *> loops = CollectLoops(m_ast, dg);
+  CSageCodeGen m_ast;
+  DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
+  map<string, void *> loops = CollectLoops(m_ast, dg);
 
-  //void *scope_stmt_2 = loops["__UT_L2"];
-  //vector<string> free_vec, fixed_vec;
-  //free_vec.clear(), fixed_vec.clear();
-  //dg.UpdateUserSpecifiedPragma(scope_stmt_2, PIPELINE, "__PIPELINE__L2");
-  //dg.GetShadowedParams(scope_stmt_2, PIPELINE, free_vec, fixed_vec);
-  //EXPECT_EQ(fixed_vec.size(), 1);
-  //EXPECT_EQ(fixed_vec[0], "__PI");
-  //free_vec.clear(), fixed_vec.clear();
-  //dg.UpdateUserSpecifiedPragma(scope_stmt_2, TILING, "__TILING__L2");
-  //dg.GetShadowedParams(scope_stmt_2, TILING, free_vec, fixed_vec);
+  void *scope_stmt_2 = loops["__UT_L2"];
+  vector<string> free_vec, fixed_vec;
+  free_vec.clear(), fixed_vec.clear();
+  dg.UpdateUserSpecifiedPragma(scope_stmt_2, PIPELINE, "__PIPELINE__L2");
+  dg.GetShadowedParams(scope_stmt_2, PIPELINE, free_vec, fixed_vec);
+  EXPECT_EQ(fixed_vec.size(), 1);
+  EXPECT_EQ(fixed_vec[0], "__PI");
+  free_vec.clear(), fixed_vec.clear();
+  dg.UpdateUserSpecifiedPragma(scope_stmt_2, TILING, "__TILING__L2");
+  dg.GetShadowedParams(scope_stmt_2, TILING, free_vec, fixed_vec);
+  EXPECT_EQ(fixed_vec.size(), 0);
 }
 
-
-
 } // namespace
-//INSTANTIATE_TEST_SUITE_P(DsGneratorTestOne,
-//                        DsGeneratorTest,
-//                        Values(""));
 
 int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);

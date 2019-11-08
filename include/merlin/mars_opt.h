@@ -1,14 +1,19 @@
 #pragma once
-
-#include "PolyModel.h"
-#include "cmdline_parser.h"
-#include "file_parser.h"
-#include "rose.h"
 #include <cassert>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
+#include <algorithm>
+
+#include "PolyModel.h"
+#include "cmdline_parser.h"
+#include "file_parser.h"
+#include "rose.h"
+using std::map;
+using std::set;
+using std::string;
+using std::vector;
 
 #define DEBUG 0
 #define XMD_GEN 0
@@ -24,52 +29,56 @@
 #define TASK_KERNEL_JSON "task_kernel.json"
 #define TASK_ATTRIBUTE_JSON "task_attribute.json"
 #define MAX_SIZE_THRESHOLD (1LL << 32)
-#define MAX_CONST_BYTE 1024 * 1024
+#define MAX_CONST_BYTE (1024 * 1024)
 #define XILINX_ARG_LIMITATION 256
 #define INTEL_ARG_LIMITATION 256
 #define WARNING_ARG_LIMITATION 16
 #define XILINX_ARG_SCALAR_LIMITATOIN 16
-#define INTEL_DEFAULT_REGISTER_THRESHOLD 4096
-#define INTEL_MAX_REGISTER_THRESHOLD 8192
+#define INTEL_DEFAULT_REGISTER_THRESHOLD                                       \
+  512  // 64bytes for array in single work-item kernel
+#define INTEL_MAX_REGISTER_THRESHOLD                                           \
+  8192  // 1Kbytes for array in multiple work-item kernel
 #define MERLIN_SMALL_TRIP_COUNT_THRESHOLD 16
-// pass_name: MemBurst CoarseOpt FineOpt WideBus Outline Reduction
-// level: INFO, WARNING, ERROR
-// message: multi-line display message
-// number: INFO 1xx, Warning 2xx, Error 3xx
+#define MAX_PASS_LENGTH 100
+//  pass_name: MemBurst CoarseOpt FineOpt WideBus Outline Reduction
+//  level: INFO, WARNING, ERROR
+//  message: multi-line display message
+//  number: INFO 1xx, Warning 2xx, Error 3xx
 class CSageCodeGen;
 void dump_critical_message(string pass_name, string level, string message,
                            int number = -1, int user_display = 0,
                            CSageCodeGen *ast = nullptr, void *node = nullptr);
 
-// To parallelize builds, let's dump a few things in the header:
+//  To parallelize builds, let's dump a few things in the header:
 void GetTLDMInfo_withPointer(void *sg_node, void *pArg);
 int io_cfg_gen();
 void dep_graph_gen();
-int get_map_additionals(CSageCodeGen &codegen, string sPort, void *sg_scope,
-                        map<string, string> &mapAdditional);
-void *get_surrounding_graph_from_task(void *task_bb, CSageCodeGen &codegen,
-                                      string sTaskName, string &graph_name,
-                                      string &additional);
+int get_map_additionals(CSageCodeGen *codegen, const string &sPort,
+                        void *sg_scope, map<string, string> *mapAdditional);
+void *get_surrounding_graph_from_task(void *task_bb, CSageCodeGen *codegen,
+                                      const string &sTaskName,
+                                      const string &graph_name,
+                                      const string &additional);
 
-int profiling_top(CSageCodeGen &codegen, void *pTopFunc,
-                  CInputOptions &options);
-int cpu_ref_add_timer(CSageCodeGen &codegen, void *pTopFunc,
-                      CInputOptions &options);
-int preprocessing(CSageCodeGen &codegen, void *pTopFunc,
-                  CInputOptions &options);
-int local_array_delinearization(CSageCodeGen &codegen, void *pTopFunc,
-                                CInputOptions &options);
-int mars_gen_preproc(CSageCodeGen &codegen, void *pTopFunc,
-                     CInputOptions &options);
-int mars_gen_check_task_interface_format(CSageCodeGen &codegen, void *pTopFunc,
+int profiling_top(CSageCodeGen *codegen, void *pTopFunc,
+                  const CInputOptions &options);
+int cpu_ref_add_timer(CSageCodeGen *codegen, void *pTopFunc,
+                      const CInputOptions &options);
+int preprocessing(CSageCodeGen *codegen, void *pTopFunc,
+                  const CInputOptions &options);
+int local_array_delinearization(CSageCodeGen *codegen, void *pTopFunc,
+                                const CInputOptions &options);
+int mars_gen_preproc(CSageCodeGen *codegen, void *pTopFunc,
+                     const CInputOptions &options);
+int mars_gen_check_task_interface_format(CSageCodeGen *codegen, void *pTopFunc,
                                          CInputOptions options);
-int tldm_extraction_mars_gen(CSageCodeGen &codegen, void *pTopFunc,
+int tldm_extraction_mars_gen(CSageCodeGen *codegen, void *pTopFunc,
                              CInputOptions options);
 
 extern map<void *, vector<int>> mapTask2OrderVec;
 extern map<void *, vector<int>> mapGraph2OrderVec;
 
-// added by Hui
+//  added by Hui
 struct GraphOrderLT {
   bool operator()(void *graph1, void *graph2) const {
     size_t i;
@@ -78,7 +87,7 @@ struct GraphOrderLT {
     vector<int> order_vec1 = mapGraph2OrderVec[graph1];
     vector<int> order_vec2 = mapGraph2OrderVec[graph2];
 
-    // debug
+    //  debug
     if (DEBUG) {
       cerr << "graph 1:";
       for (i = 0; i < order_vec1.size(); i++)
@@ -96,8 +105,8 @@ struct GraphOrderLT {
       if (order_vec1[i] > order_vec2[i])
         return false;
     }
-    // cout<<"Error: Graph order vector overlap..."<<endl;
-    // assert(0);
+    //  cout<<"Error: Graph order vector overlap..."<<endl;
+    //  assert(0);
     return false;
   }
 };
@@ -115,8 +124,8 @@ struct TaskOrderLT {
       if (order_vec1[i] > order_vec2[i])
         return false;
     }
-    // cout<<"Error: Task order vector overlap..."<<endl;
-    // assert(0);
+    //  cout<<"Error: Task order vector overlap..."<<endl;
+    //  assert(0);
     return false;
   }
 };

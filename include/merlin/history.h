@@ -1,28 +1,20 @@
-#ifndef MERLIN_HISTORY_H
-#define MERLIN_HISTORY_H
+#ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_HISTORY_H_
+#define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_HISTORY_H_
 
 #include <algorithm>
 #include <sstream>
 #include <string>
 #include <vector>
-
-using std::string;
-using std::vector;
-
+#include <map>
 #include "locations.h"
 #include "mars_opt.h"
 
 #include "rapidjson/document.h"
 #include "rapidjson/rapidjson.h"
 
-using rapidjson::Document;
-using rapidjson::kArrayType;
-using rapidjson::SizeType;
-using rapidjson::Value;
-
 #define HIS_CHECK 1
 
-#if 0 // control history log
+#if 0  //  control history log
 #define HIS_WARNING(x)                                                         \
   cout << "[HIS WARNING][" << __func__ << ", " << __LINE__ << "]" << x << endl;
 #else
@@ -58,11 +50,11 @@ class CSageCodeGen;
 
 enum Action { INSERT, DELETE, COPY, BUILD };
 
-class HistoryEntry { // all history are noted in their parents
-public:
+class HistoryEntry {  //  all history are noted in their parents
+ public:
   HistoryEntry(Action action, const int loc) : action(action), location(loc) {}
 
-  string toString();
+  std::string toString();
 
   Action getAction() { return this->action; }
   const Action getAction() const { return this->action; }
@@ -71,18 +63,19 @@ public:
 
   HistoryEntry() : action(INSERT), location(-1) {}
 
-  void dumpToJson(Value *value, Document::AllocatorType &allocator) const;
+  void dumpToJson(rapidjson::Value *value,
+                  rapidjson::Document::AllocatorType *allocator) const;
 
-  void loadFromJson(const Value &value);
+  void loadFromJson(const rapidjson::Value &value);
 
-private:
+ private:
   Action action;
-  int location; // topological location: the index of its parent
+  int location;  //  topological location: the index of its parent
 };
 
 class HistoryMarker {
-public:
-  HistoryMarker(Action action, const int loc)
+ public:
+  HistoryMarker(Action action, const int &loc)
       : org_identifier(""), histories({HistoryEntry(action, loc)}),
         applied_index(-1), children_num(-1), propagate(1), no_hierarchy(0),
         qor_merge_mode(""), parallel(false) {}
@@ -90,38 +83,41 @@ public:
       : org_identifier(""), applied_index(-1), children_num(-1), propagate(1),
         no_hierarchy(0), qor_merge_mode(""), parallel(false) {}
 
-  vector<HistoryEntry> &getHistories() { return histories; }
-  const vector<HistoryEntry> &getHistories() const { return histories; }
-  vector<string> &getMessages() { return messages; }
+  std::vector<HistoryEntry> &getHistories() { return histories; }
+  const std::vector<HistoryEntry> &getHistories() const { return histories; }
+  std::vector<std::string> &getMessages() { return messages; }
 
-  string &getOrgIdentifier() { return this->org_identifier; }
+  std::string &getOrgIdentifier() { return this->org_identifier; }
 
-  void setOrgIdentifier(const string org_identifier) {
+  void setOrgIdentifier(const std::string &org_identifier) {
     this->org_identifier = org_identifier;
   }
 
   void setParallel(bool isParallel) { this->parallel = isParallel; }
 
-  int getAppliedIndex() { return this->applied_index; }
+  int64_t getAppliedIndex() { return this->applied_index; }
 
   void setAllApplied() { this->applied_index = this->histories.size() - 1; }
-  void increaseAppliedNum(int num);
+  void increaseAppliedNum(size_t num);
 
-  int getChildrenNum() { return this->children_num; }
+  int64_t getChildrenNum() { return this->children_num; }
 
-  void setChildrenNum(int children_num) { this->children_num = children_num; }
+  void setChildrenNum(size_t children_num) {
+    this->children_num = children_num;
+  }
 
-  string toString(string leadingString);
+  std::string toString(std::string leadingString);
 
-  void dumpToJson(Value *d, Document::AllocatorType &allocator) const;
+  void dumpToJson(rapidjson::Value *d,
+                  rapidjson::Document::AllocatorType *allocator) const;
 
-  void loadFromJson(const Value &d);
+  void loadFromJson(const rapidjson::Value &d);
 
-  void setUserCodeScopeId(string userCodeScopeId) {
+  void setUserCodeScopeId(std::string userCodeScopeId) {
     this->user_code_scope_id = userCodeScopeId;
   }
 
-  string getUserCodeScopeId() const { return this->user_code_scope_id; }
+  std::string getUserCodeScopeId() const { return this->user_code_scope_id; }
 
   void setPropagate(int isPropagate) { this->propagate = isPropagate; }
 
@@ -131,27 +127,27 @@ public:
 
   int getNoHierarchy() const { return this->no_hierarchy; }
 
-  void setQoRMergeMode(string qorMergeMode) {
+  void setQoRMergeMode(std::string qorMergeMode) {
     this->qor_merge_mode = qorMergeMode;
   }
 
-  string getQoRMergeMode() const { return this->qor_merge_mode; }
+  std::string getQoRMergeMode() const { return this->qor_merge_mode; }
 
   bool getParallel() const { return this->parallel; }
 
-private:
-  string org_identifier; // position string or “created_#”
-  string user_code_scope_id;
-  vector<HistoryEntry> histories;
-  vector<string> messages;
-  int applied_index;
-  int children_num;
-  int propagate;    // the children will share the same org_identifier with it
-  int no_hierarchy; // passed to Shan, not used now according to his opinion
-  string
-      qor_merge_mode; // set major for minor for node when lc has multiple
-                      // nodes corresponding to user node if set major the node,
-                      // the user node cycle will be the cycle of this node
+ private:
+  std::string org_identifier;  //  position std::string or “created_#”
+  std::string user_code_scope_id;
+  std::vector<HistoryEntry> histories;
+  std::vector<std::string> messages;
+  int64_t applied_index;
+  int64_t children_num;
+  int propagate;     //  the children will share the same org_identifier with it
+  int no_hierarchy;  //  passed to Shan, not used now according to his opinion
+  std::string qor_merge_mode;  //  set major for minor for node when lc has
+                               //  multiple nodes corresponding to user node if
+                               //  set major the node, the user node cycle will
+                               //  be the cycle of this node
   bool parallel;
 };
 
@@ -159,62 +155,72 @@ private:
 /* Helper functions ***********************************************************/
 /******************************************************************************/
 
-string getParent(const string &id);
-string printNodeInfo(CSageCodeGen *ast, void *node, int len = 80);
+std::string getParent(const std::string &id);
+std::string printNodeInfo(const CSageCodeGen *ast, void *node, int len = 80);
 
 /******************************************************************************/
 /* History APIs ***************************************************************/
 /******************************************************************************/
 
-bool isOptPass(const string &passName);
+bool isOptPass(const std::string &passName);
 
-void markInsert(CSageCodeGen &ast, SgNode *, const int loc,
-                const string &debugInfo = "");
-void markDelete(CSageCodeGen &ast, SgNode *, const int loc,
-                const string &debugInfo = "", SgNode *removeNode = nullptr);
-void markCopy(CSageCodeGen &ast, SgNode *, SgNode *,
-              const string &debugInfo = "", const bool passMajor = false);
-void markBuild(CSageCodeGen &ast, void *, const string &debugInfo = "",
+void markInsert(CSageCodeGen *ast, SgNode *, const int loc,
+                const std::string &debugInfo = "");
+void markDelete(CSageCodeGen *ast, SgNode *, const int loc,
+                const std::string &debugInfo = "",
+                SgNode *removeNode = nullptr);
+void markCopy(CSageCodeGen *ast, SgNode *, SgNode *,
+              const std::string &debugInfo = "", const bool passMajor = false);
+void markBuild(CSageCodeGen *ast, void *, const std::string &debugInfo = "",
                void *bindNode = nullptr);
-void markIncludeFile(CSageCodeGen &ast, SgNode *scope, string filename,
+void markIncludeFile(CSageCodeGen *ast, SgNode *scope, std::string filename,
                      int before);
-void markIncludeMacro(CSageCodeGen &ast, SgNode *scope, string macro,
+void markIncludeMacro(CSageCodeGen *ast, SgNode *scope, std::string macro,
                       int before);
-void markIncludeExpand(CSageCodeGen &ast);
+void markIncludeExpand(CSageCodeGen *ast);
 
-void setNoHierarchy(CSageCodeGen &ast, void *node_, int isNoHierarchy);
-void setQoRMergeMode(CSageCodeGen &ast, void *node_, string qorMergeMode,
+void setNoHierarchy(CSageCodeGen *ast, void *node_, int isNoHierarchy);
+void setQoRMergeMode(CSageCodeGen *ast, void *node_, std::string qorMergeMode,
                      bool isRecursivelySet = false);
-void setParallel(CSageCodeGen &ast, void *node_, bool isParallel,
+void setParallel(CSageCodeGen *ast, void *node_, bool isParallel,
                  bool isRecursivelySet = false);
-string bindNodeOrgId(CSageCodeGen &ast, void *node_, void *bindNode,
-                     bool force = false);
-void insertMessage(CSageCodeGen &ast, void *node, map<string, string> &msg);
+std::string bindNodeOrgId(CSageCodeGen *ast, void *node_, void *bindNode,
+                          bool force = false);
+void insertMessage(CSageCodeGen *ast, void *node,
+                   const std::map<std::string, std::string> &msg);
 
-string getOriginalTopoLocation(CSageCodeGen *ast,
-                               map<SgNode *, HistoryMarker> &histories,
-                               string topoLocation, bool ignoreError = false);
-string getOriginalTopoLocation(map<string, HistoryMarker> &histories,
-                               string topoLocation, bool ignoreError = false);
+std::string
+getOriginalTopoLocation(CSageCodeGen *ast,
+                        std::map<SgNode *, HistoryMarker> *histories,
+                        std::string topoLocation, bool ignoreError = false);
+std::string
+getOriginalTopoLocation(std::map<std::string, HistoryMarker> *histories,
+                        std::string key, bool ignoreError = false);
 
-void historyModuleInit(CSageCodeGen &ast, const string &passName);
-map<SgNode *, string> saveOrgId(CSageCodeGen &ast, string passName);
-void checkReferenceInduction(CSageCodeGen &ast, map<SgNode *, string> &orgIdMap,
-                             string passName);
-map<string, map<string, string>> saveForInterPasses(CSageCodeGen &ast,
-                                                    string passName,
-                                                    bool isForNextPass = false);
-void checkBetweenPasses(CSageCodeGen &ast,
-                        map<string, map<string, string>> &inputReferReport);
+void historyModuleInit(CSageCodeGen *ast, const std::string &passName);
+std::map<SgNode *, std::string> saveOrgId(CSageCodeGen *ast,
+                                          std::string passName);
+void checkReferenceInduction(CSageCodeGen *ast,
+                             const std::map<SgNode *, std::string> &orgIdMap,
+                             std::string passName);
+std::map<std::string, std::map<std::string, std::string>>
+saveForInterPasses(CSageCodeGen *ast, std::string passName,
+                   bool isForNextPass = false);
+void checkBetweenPasses(
+    CSageCodeGen *ast,
+    const std::map<std::string, std::map<std::string, std::string>>
+        &inputReferReport);
 
 /******************************************************************************/
 /* Json API *******************************************************************/
 /******************************************************************************/
 
-map<string, HistoryMarker> readHistoriesFromJson(const string histories_url);
-void writeHistoriesToJson(const string histories_url,
-                          const map<string, HistoryMarker> &);
-map<string, HistoryMarker>
-getSerializableHistories(CSageCodeGen &ast, map<SgNode *, HistoryMarker> &);
+std::map<std::string, HistoryMarker>
+readHistoriesFromJson(const std::string histories_url);
+void writeHistoriesToJson(const std::string histories_url,
+                          const std::map<std::string, HistoryMarker> &);
+std::map<std::string, HistoryMarker>
+getSerializableHistories(CSageCodeGen *ast,
+                         std::map<SgNode *, HistoryMarker> *);
 
-#endif /* MERLIN_HISTORY_H */
+#endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_HISTORY_H_

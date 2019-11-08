@@ -1,10 +1,10 @@
 #pragma once
+#include <map>
+#include <set>
+#include <vector>
+#include <string>
 
-#include "cmdline_parser.h"
-#include "file_parser.h"
 #include "rose.h"
-#include "xml_parser.h"
-
 #include "bsuNode.h"
 #include "codegen.h"
 #include "mars_ir.h"
@@ -13,158 +13,105 @@
 
 #include "stream_ir.h"
 
-using namespace std;
-using namespace MarsProgramAnalysis;
-using namespace MerlinStreamModel;
+class MemoryPartition {
+ protected:
+  CSageCodeGen *m_ast;
+  void *mTopFunc;
+  CInputOptions mOptions;
+  CMarsIr *mMars_ir;
 
-int memory_partition_top(CSageCodeGen &codegen, void *pTopFunc,
-                         CInputOptions &options);
+  // Mode options
+  bool mAltera_flow;
+  bool mXilinx_flow;
+  int m_reshape_threshold;
+  bool m_dual_option;
+  std::string m_transform_level;
 
-int memory_partition_xilinx_top(CSageCodeGen &codegen, void *pTopFunc,
-                                CInputOptions &options);
+  // Final decisions
+  std::map<void *, std::map<int, int>> m_partitions;
+  std::map<CMirNode *, bool> m_actions;  // Xilinx use only
+  std::set<void *> m_registers;          // Intel use only
+  std::map<void *, std::map<std::string, std::string>>
+      m_attributes;  // Intel use only
 
-void insert_partition(CSageCodeGen &codegen, void *pTopFunc,
-                      CInputOptions &options, CMarsIr *mars_ir,
-                      map<CMirNode *, bool> &node_actions,
-                      map<void *, map<int, int>> &p_results);
+  // Temp results and caching data
+  std::map<CMirNode *, std::map<void *, std::map<int, int>>> tmp_factors;
+  std::map<void *, std::map<int, int>> prior_factors;
+  std::map<void *, std::set<int>> adjust_factors;
+  std::map<void *, int> cache_var_dim;
+  std::map<void *, std::vector<size_t>> cache_var_size;
+  std::map<void *, void *> cache_var_base_type;
 
-void partition_analysis(CSageCodeGen &codegen, CMarsIr *mars_ir,
-                        map<CMirNode *, map<void *, map<int, int>>> &p_factors,
-                        map<CMirNode *, bool> &node_actions,
-                        map<void *, set<int>> &adjust_factors,
-                        bool dual_option);
+  void dual_port_adjust();
 
-bool partition_analysis_node(CSageCodeGen &codegen, CMarsIr *mars_ir,
-                             CMirNode *fNode, CMirNode *bNode,
-                             map<void *, map<int, int>> &var2partition,
-                             map<void *, set<int>> &adjust_factors,
-                             bool dual_option);
+ public:
+  MemoryPartition(CSageCodeGen *codegen, void *pTopFunc,
+                  const CInputOptions &options, CMarsIr *mars_ir)
+      : m_ast(codegen), mTopFunc(pTopFunc), mOptions(options),
+        mMars_ir(mars_ir), mAltera_flow(false), mXilinx_flow(false) {
+    init();
+  }
+  void init();
+  bool run();
 
-void partition_merge(CSageCodeGen &codegen, CMarsIr *mars_ir,
-                     map<CMirNode *, map<void *, map<int, int>>> &p_factors,
-                     map<void *, map<int, int>> &p_results,
-                     map<CMirNode *, bool> &node_actions,
-                     map<void *, map<int, int>> &prior_factors,
-                     bool dual_option);
+  std::map<CMirNode *, bool> get_node_actions() { return m_actions; }
+  std::map<void *, std::map<int, int>> get_partitions() { return m_partitions; }
+  void set_registers(std::set<void *> registers) {
+    for (auto reg : registers)
+      m_registers.insert(reg);
+  }
 
-void partition_evaluation(map<void *, map<int, int>> &var2partition);
+  void partition_analysis();
+  bool
+  partition_analysis_node(CMirNode *fNode, CMirNode *bNode,
+                          std::map<void *, std::map<int, int>> *var2partition);
+  void partition_merge();
 
-void partition_transform(CSageCodeGen &codegen, CMarsIr *mars_ir,
-                         map<void *, map<int, int>> &var2partition,
-                         map<CMirNode *, bool> &node_actions,
-                         map<void *, map<int, int>> &prior_factors,
-                         map<void *, set<int>> &adjust_factors);
+  // Xilinx flow
+  void insert_partition_xilinx();
+  void partition_transform_xilinx();
 
-void partition_codegen(CSageCodeGen &codegen, void *arr_init, int dim,
-                       int factor);
+  // Intel flow
+  void insert_partition_intel();
+  void partition_evaluate_intel();
+  void partition_transform_intel();
 
-bool factor_extract(CMarsIr *mars_ir, void *sg_pragma,
-                    map<int, int> &hls_factors);
+  void reportPartitionMessage();
+  void delete_existing_pragma();
 
-void index_transform(CSageCodeGen &codegen, CMarsIr *mars_ir, CMirNode *bNode,
-                     map<void *, map<int, int>> var2partition,
-                     string transform_level = "low");
+  bool reorganize_factor(
+      std::map<void *, std::vector<std::map<int, int>>> *v_factors);
+  void index_transform(CMirNode *bNode);
+  void array_index_transform();
+};
 
-void reportPartitionMessage(CSageCodeGen &codegen,
-                            map<void *, map<int, int>> var2partition);
-
-void partial_partition_parsing(map<int, int> &factor_map,
-                               vector<int> &arr_size);
-
-bool total_bank_evalue(map<int, int> factor_map, int factor_t, int dim);
-
-void local_bank_evalue(map<int, int> &factor_map, vector<int> &arr_size);
-
-void delete_existing_pragma(CSageCodeGen &codegen, CMarsIr *mars_ir);
-
-void print_partition(CSageCodeGen &codegen,
-                     map<void *, map<int, int>> &var2partition);
-
-bool reorganize_factor(CSageCodeGen &codegen, CMarsIr *mars_ir,
-                       map<CMirNode *, map<void *, map<int, int>>> &p_factors,
-                       map<void *, vector<map<int, int>>> &v_factors,
-                       map<void *, map<int, int>> &prior_factors);
-
-void choose_factor(vector<size_t> arr_size, vector<map<int, int>> &o_factors,
-                   map<int, int> &m_factors, map<int, int> &p_factors);
-
-void copy_factors(vector<map<int, int>> &original,
-                  vector<map<int, int>> &target, vector<size_t> arr_size_org,
-                  vector<size_t> arr_size_target, int partial_dim);
-
-void copy_factors(map<int, int> &original, map<int, int> &target);
-
+// Xilinx flow
+void partition_pragma_gen_xilinx(CSageCodeGen *codegen, void *arr_init, int dim,
+                                 int factor);
+void enumerate_point_space(const std::vector<int> &dim_size,
+                           std::vector<std::vector<int>> *point_set);
+int index_switch_transform(CSageCodeGen *codegen, void *input_array,
+                           void *input_loop, std::vector<int> switch_factor_in,
+                           bool read_only);
+int choose_factor(std::vector<size_t> arr_size,
+                  const std::vector<std::map<int, int>> &o_factors,
+                  std::map<int, int> *m_factors, std::map<int, int> *p_factors);
+void copy_factors(const std::vector<std::map<int, int>> &original,
+                  std::vector<std::map<int, int>> *target,
+                  const std::vector<size_t> &arr_size_org,
+                  const std::vector<size_t> &arr_size_target, int partial_dim);
+void copy_factors(const std::map<int, int> &original,
+                  std::map<int, int> *target);
 bool check_action(int f1, int f2);
 
-void reportInvalidFactor(CSageCodeGen &codegen, CMirNode *node,
-                         string str_factor);
-
-void reportInvalidFactor1(CSageCodeGen &codegen, CMirNode *node, int old_factor,
+void print_partition(CSageCodeGen *codegen,
+                     const std::map<void *, std::map<int, int>> &partitions);
+bool factor_extract(CSageCodeGen *codegen, CMarsIr *mars_ir, void *sg_pragma,
+                    map<int, int> *hls_factors);
+// User message
+void reportInvalidFactor(CSageCodeGen *codegen, CMirNode *node,
+                         std::string str_factor);
+void reportInvalidFactor1(CSageCodeGen *codegen, CMirNode *node, int old_factor,
                           int range);
-
-int memory_partition_intel_top(CSageCodeGen &codegen, void *pTopFunc,
-                               CInputOptions &options);
-
-void partition_analysis_intel(CSageCodeGen &codegen, CMarsIr *mars_ir,
-                              CStreamIR *stream_ir);
-
-bool partition_analysis_var(CSageCodeGen &codegen, void *var, CMarsIr *mars_ir,
-                            map<int, int> &m_factors);
-
-bool analyze_channel(CSageCodeGen &codegen, void *var, void *scope,
-                     map<int, int> &m_factors, int tmp_dim);
-
-void insert_internal_pragma(CSageCodeGen &codegen,
-                            map<void *, map<int, int>> p_channels,
-                            map<void *, map<int, int>> p_buffers);
-
-void partition_transform_intel(CSageCodeGen &codegen, CMarsIr *mars_ir,
-                               CStreamIR *stream_ir);
-
-bool parse_internal_pragma(CSageCodeGen &codegen, void *sg_pragma,
-                           CMarsIr *mars_ir, CStreamIR *stream_ir,
-                           map<void *, map<int, int>> &p_channels,
-                           map<void *, map<int, int>> &p_buffers,
-                           vector<void *> &ch_pragma);
-
-bool transform_channel(CSageCodeGen &codegen, CMarsIr *mars_ir,
-                       CStreamIR *stream_ir,
-                       map<void *, map<int, int>> &p_channels,
-                       vector<void *> &user_channels);
-
-void transform_buffer(CSageCodeGen &codegen);
-
-void delete_internal_pragma(CSageCodeGen &codegen, vector<void *> &ch_pragma);
-
-bool parse_iterator_for_call(CSageCodeGen &codegen, CStreamIR *stream_ir,
-                             void *sg_loop, vector<void *> &vec_new_expr,
-                             map<CStreamBase *, set<int>> &new_attribute,
-                             vector<void *> funcs, vector<void *> calls);
-
-bool check_user_channel(CSageCodeGen &codegen, void *sg_ref,
-                        vector<void *> vec_new_expr);
-
-void reportDisableFGPIP(CSageCodeGen &codegen, CMirNode *node, void *arr);
-
-void reportSuboptimalFGPIP(CSageCodeGen &codegen, CMirNode *node, void *arr);
-
-void array_index_transform(CSageCodeGen &codegen, CMarsIr *mars_ir,
-                           map<CMirNode *, bool> &node_actions,
-                           map<void *, map<int, int>> &var2partition,
-                           string transform_level = "low");
-
-void dual_port_adjust(map<void *, map<int, int>> &p_results,
-                      map<void *, int> v_size);
-
-static const std::string VIVADO_str("HLS");
-static const std::string AP_str("AP"); // previous vivado pragma
-static const std::string ACCEL_str("ACCEL");
-static const std::string UNROLL_str("unroll");
-static const std::string PIPE_str("pipeline");
-static const std::string PARTITION_str("array_partition");
-static const std::string factor_str("factor");
-static const std::string II_str("II");
-static const std::string dim_str("dim");
-static const std::string var_str("variable");
-static const std::string type_str("type");
-static const std::string HLS_TRIPCOUNT_str("LOOP_TRIPCOUNT");
+void reportSuboptimalFGPIP(CSageCodeGen *codegen, CMirNode *node, void *arr);
+void reportSuboptimalMemIntel(CSageCodeGen *codegen, void *arr_init);

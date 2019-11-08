@@ -8,4 +8,4 @@
 #include "tldm_annotate.h"
 #include "xml_parser.h"
 
-int kernel_file_list_gen(CSageCodeGen &codegen, void *pTopFunc, int tool);
+int kernel_file_list_gen(CSageCodeGen *codegen, void *pTopFunc, int tool);

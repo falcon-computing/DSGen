@@ -1,72 +1,99 @@
 #pragma once
 
-#include "PolyModel.h"
-#include "cmdline_parser.h"
-#include "file_parser.h"
-#include "xml_parser.h"
+#include <map>
+#include <set>
+#include <string>
 
 #include "codegen.h"
 #include "mars_ir.h"
 #include "mars_opt.h"
+#include "mars_ir_v2.h"
 
-typedef std::map<int, int> dim_map;
-typedef std::map<SgInitializedName *, dim_map> array_dim_map;
+class LoopParallel {
+ protected:
+  CSageCodeGen *m_ast;
+  void *mTopFunc;
+  CInputOptions mOptions;
+  CMarsIr mMars_ir;
+  CMarsIrV2 mMars_ir_v2;
 
-void LoopParallel(CSageCodeGen &codegen, void *pTopFunc, CInputOptions &options,
-                  CMarsIr &mars_ir);
-void insert_pipeline(CSageCodeGen &codegen, CMirNode *bNode, bool action);
-void insert_unroll(CSageCodeGen &codegen, CMirNode *bNode);
-bool is_unroll_dim(CMirNode *bNode, int dim_val, string arr_name,
-                   bool full_tag);
-void reportInproperDataLayout(CSageCodeGen &codegen, void *var);
+  // Mode options
+  bool mAltera_flow;
+  bool mXilinx_flow;
+  bool mNaive;
+  bool mAutoReg;
+  bool mIvdep;
+  bool mDepResolve;
+  bool mLoopFlatten;
+  bool mAutoPartition;
 
-void reportCoarseGrainedParallel(CSageCodeGen &codegen, CMirNode *new_node);
+ public:
+  LoopParallel(CSageCodeGen *codegen, void *pTopFunc,
+               const CInputOptions &options)
+      : m_ast(codegen), mTopFunc(pTopFunc), mOptions(options),
+        mAltera_flow(false), mXilinx_flow(false), mNaive(false), mAutoReg(true),
+        mIvdep(false), mDepResolve(true), mLoopFlatten(true),
+        mAutoPartition(true) {
+    init();
+  }
+  void init();
+  bool run();
+  bool preprocess();
+  void remove_loop_pragmas();
+  void removePragmaStatement(CMirNode *new_node);
 
-void reportCompleteUnroll(CSageCodeGen &codegen, void *sg_loop, int range);
+  // Xilinx flow
+  int loop_parallel_xilinx_top();
+  void parse_pragma_xilinx(map<CMirNode *, bool> node_actions);
+  void insert_pipeline(CMirNode *bNode, bool action);
+  void insert_unroll(CMirNode *bNode);
 
-void reportCompleteUnrollWarn(CSageCodeGen &codegen, CMirNode *node);
+  // Intel flow
+  int loop_parallel_intel_top();
+  int parse_pragma_intel();
+};
 
-void reportUnrollFactor(CSageCodeGen &codegen, void *sg_loop, int factor);
+bool check_legal_complete_unroll(CSageCodeGen *codegen, void *sg_loop,
+                                 int64_t *l_range);
 
-void reportDataDependence(CSageCodeGen &codegen, void *var, void *sg_loop);
-
-void reportPipeline(CSageCodeGen &codegen, void *sg_loop, string II_factor,
-                    string msg_dep);
-
-void reportNonCanonical(CSageCodeGen &codegen, CMirNode *node);
-
-void reportIgnorePragmaDependence(CSageCodeGen &codegen, void *sg_pragma,
-                                  void *var);
-
-void removePragmaStatement(CMirNode *new_node, CSageCodeGen &codegen);
-
-void add_loop_tripcount_pragma(CSageCodeGen &codegen, void *pTopFunc,
-                               CInputOptions &options, CMarsIr &mars_ir);
-
-void *test_false_dependency(CSageCodeGen &codegen, void *sg_loop,
+// Dependency checker
+int dependency_resolve_top(CSageCodeGen *ast, void *pTopFunc,
+                           const CInputOptions &options);
+void *test_false_dependency(CSageCodeGen *codegen, void *sg_loop,
                             void *sg_array);
-
-bool collect_tripcount_pragma(CSageCodeGen &codegen, CMarsIr *mars_ir,
-                              void *scope, void *&sg_bound_pragma,
-                              int64_t &l_range);
-
-void check_false_dependency_xilinx(CSageCodeGen &codegen, void *sg_pragma,
+void check_false_dependency_xilinx(CSageCodeGen *codegen, void *sg_pragma,
                                    void *target_var);
+void check_false_dependency_xilinx(CSageCodeGen *codegen, void *pTopFunc,
+                                   const CInputOptions &options);
+void check_dependency_msg(CSageCodeGen *codegen, CMirNode *bNode,
+                          string *msg_dep);
+void check_false_dependency_intel(CSageCodeGen *codegen, void *pTopFunc,
+                                  const CInputOptions &options);
+bool check_false_dependency_intel(CSageCodeGen *codegen, void *sg_pragma,
+                                  void *target_var, bool check_all = false);
 
-void check_false_dependency_xilinx(CSageCodeGen &codegen, void *pTopFunc,
-                                   CInputOptions &options);
+// Loop tripcount process
+void add_loop_tripcount_pragma(CSageCodeGen *codegen, void *pTopFunc,
+                               CMarsIr *mars_ir);
 
-void check_dependency_msg(CSageCodeGen &codegen, CMirNode *bNode,
-                          string &msg_dep);
+// auto register and auto ivdep
+int intel_auto_ivdep_top(CSageCodeGen *codegen, void *pTopFunc,
+                         const CInputOptions &options);
+int intel_auto_register_top(CSageCodeGen *codegen, void *pTopFunc,
+                            const CInputOptions &options,
+                            set<void *> *registers);
+int convert_attribute_pragma_to_type(CSageCodeGen *codegen, void *pTopFunc,
+                                     const CInputOptions &options);
 
-bool preprocess(CSageCodeGen &codegen, void *pTopFunc, CInputOptions &options,
-                CMarsIr &mars_ir);
-
-void reportApplyPragmaDependence(CSageCodeGen &codegen, void *var,
+// Message report
+void reportCoarseGrainedParallel(CSageCodeGen *codegen, CMirNode *new_node);
+void reportCompleteUnroll(CSageCodeGen *codegen, void *sg_loop, int range);
+void reportUnrollFactor(CSageCodeGen *codegen, void *sg_loop, int factor);
+void reportPipeline(CSageCodeGen *codegen, void *sg_loop, string II_factor,
+                    string msg_dep);
+void reportIgnorePragmaDependence(CSageCodeGen *codegen, void *sg_pragma,
+                                  void *var);
+void reportApplyPragmaDependence(CSageCodeGen *codegen, void *var,
                                  void *sg_loop, bool check_all = false);
-
-void reportRiskyFalseDependence(CSageCodeGen &codegen, void *sg_pragma,
+void reportRiskyFalseDependence(CSageCodeGen *codegen, void *sg_loop,
                                 void *var);
-
-void remove_loop_pragmas(CSageCodeGen &codegen, void *pTopFunc,
-                         CInputOptions &options, CMarsIr &mars_ir);

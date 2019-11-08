@@ -1,10 +1,5 @@
 
-#ifndef _MEMORY_BURST_H_INCLUDED_
-#define _MEMORY_BURST_H_INCLUDED_
-#include "PolyModel.h"
-#include "cmdline_parser.h"
-#include "file_parser.h"
+#ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_FUNCTION_OUTLINE_H_
+#define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_FUNCTION_OUTLINE_H_
 #include "mars_opt.h"
-#include "tldm_annotate.h"
-#include "xml_parser.h"
-#endif
+#endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_FUNCTION_OUTLINE_H_

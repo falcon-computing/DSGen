@@ -1,20 +1,26 @@
 
-#ifndef _TLDM_ANNOTATE_H_INCLUDED_
-#define _TLDM_ANNOTATE_H_INCLUDED_
+#ifndef TRUNK_LEGACY_TOOLS_IR_TLDM_ANNOTATE_H_
+#define TRUNK_LEGACY_TOOLS_IR_TLDM_ANNOTATE_H_
 
+#include <list>
+#include <utility>
+#include <map>
+#include <vector>
+#include <string>
 #include "cmdline_parser.h"
 #include "xml_parser.h"
 #include "PolyModel.h"
 
-#include <list>
-using namespace std;
+using std::map;
+using std::string;
+using std::vector;
 
 typedef pair<string, PolyMatrix> named_PolyMatrix;
 
 class CXMLAnn_Dependence;
 
 class reuse_chain_node {
-public:
+ public:
   int from;
   int to;
   int buffer_size;
@@ -22,13 +28,14 @@ public:
 };
 
 class CXMLAnn_Polyhedral : public CXMLNodeAnnotationBase {
-public:
+ public:
   virtual string GetClassString() { return "CXMLAnn_Polyhedral"; }
   PolyMatrix &GetDomain() { return m_domain; }
   PolyMatrix &GetOrder() {
     return m_order;
-  } // the scatter function: loop level = m_order.size(), each row is a level of
-    // ordering of one loop level, from outer loops to inner ones
+  }  // the scatter function: loop level = m_order.size(),
+     // each row is a level of
+     // ordering of one loop level, from outer loops to inner ones
   vector<named_PolyMatrix> &GetInputs() { return m_inputs; }
   vector<named_PolyMatrix> &GetOutputs() { return m_outputs; }
   vector<named_PolyMatrix> &GetDeps() { return m_deps; }
@@ -36,7 +43,7 @@ public:
 
   // vector<list<reuse_chain_node> > & GetReuseChain() { return m_reuse_chain; }
 
-protected:
+ protected:
   // 1. domain
   // 2. order
   // 3. io
@@ -55,23 +62,23 @@ protected:
 typedef struct CXMLAnn_WrapperGen_port_info__ {
   string array_name;
   string array_position;
-  string port_id; // array name
+  string port_id;  // array name
   int position;
-  int io_type; // 0 for output, 1 for input, 2 for iterator
+  int io_type;  // 0 for output, 1 for input, 2 for iterator
   string port_type;
   string monitor;
   int rate;
   string unit_size;
   PolyMatrix addr_map;
   string addr_mapping;
-  int to_sw; // indicate it is a fifo I/F connected to software
+  int to_sw;  // indicate it is a fifo I/F connected to software
   int sync_level;
-  int matrix_index; // used internally, indicate the position of polymatrix in
-                    // the CXMLAnn_Polyhedral inputs/outputs
-  int port_index;   // used internally, indicate the position of port
-  map<string, string> properties; // other annotations
+  int matrix_index;  // used internally, indicate the position of polymatrix in
+                     // the CXMLAnn_Polyhedral inputs/outputs
+  int port_index;    // used internally, indicate the position of port
+  map<string, string> properties;  // other annotations
 
-  string ref; // added on Feb3
+  string ref;  // added on Feb3
 
   int is_bus() { return "bus" == port_type || "bus_e1" == port_type; }
   int is_fifo() { return "fifo" == port_type || "bfifo" == port_type; }
@@ -90,18 +97,17 @@ typedef struct CXMLAnn_WrapperGen_port_info__ {
     }
     return str;
   }
-
 } CXMLAnn_WrapperGen_port_info;
 
 class CXMLAnn_WrapperGen : public CXMLAnn_Polyhedral {
-public:
+ public:
   enum {
-    IOTYPE_OUTPUT = 0, // DO not try to change the order!!!
+    IOTYPE_OUTPUT = 0,  // DO not try to change the order!!!
     IOTYPE_INPUT,
     IOTYPE_ITERATOR
   };
 
-public:
+ public:
   virtual string GetClassString() { return "CXMLAnn_WrapperGen"; }
 
   void SetParam(string key, string val) { m_mapParams[key] = val; }
@@ -152,7 +158,7 @@ public:
     int matrix_idx = GetPortInfo(port_idx).matrix_index;
     vector<named_PolyMatrix> &vecInputsAll =
         is_write ? (GetOutputs()) : (GetInputs());
-    if (matrix_idx < 0 || matrix_idx >= (int)vecInputsAll.size())
+    if (matrix_idx < 0 || matrix_idx >= static_cast<int>(vecInputsAll.size()))
       return nullptr;
     return &(vecInputsAll[matrix_idx]);
   }
@@ -165,8 +171,9 @@ public:
     } else if (port_info.io_type == IOTYPE_OUTPUT) {
       port_info.matrix_index = GetOutputs().size();
       GetOutputs().push_back(one_access);
-    } else
+    } else {
       assert(0);
+    }
 
     AppendPortInfo(port_info);
   }
@@ -212,9 +219,9 @@ public:
       return GetParent()->poly_info.get_loop_level();
   }
 
-protected:
+ protected:
   CXMLAnn_WrapperGen *m_parent;
-  int m_nTaskType; // 0: kernel; 1: graph; 2: host; 3: undefined
+  int m_nTaskType;  // 0: kernel; 1: graph; 2: host; 3: undefined
 
   // Scalar parameters
   // 1. body id
@@ -236,7 +243,7 @@ protected:
 };
 
 class CXMLAnn_Dependence : public CXMLNodeAnnotationBase {
-public:
+ public:
   CXMLAnn_Dependence(CXMLAnn_WrapperGen *pTask0, int nPort0,
                      CXMLAnn_WrapperGen *pTask1, int nPort1) {
     m_pTask0 = pTask0;
@@ -247,10 +254,9 @@ public:
     CXMLAnn_WrapperGen_port_info info1 = m_pTask1->GetPortInfo(nPort1);
     m_nIsWrite0 = (info0.io_type == CXMLAnn_WrapperGen::IOTYPE_OUTPUT);
     m_nIsWrite1 = (info1.io_type == CXMLAnn_WrapperGen::IOTYPE_OUTPUT);
-    m_sDistance = ""; // initial value
+    m_sDistance = "";  // initial value
   }
-  int GetDependenceType() // return 0:RAW, 1:WAW, 2:RAR, 3:WAR
-  {
+  int GetDependenceType() {  // return 0:RAW, 1:WAW, 2:RAR, 3:WAR
     return ((m_nIsWrite1 == 1) << 1) | (m_nIsWrite0 == 0);
   }
   string GetDistance(int is_reset = 0);
@@ -285,7 +291,7 @@ public:
   int GetPort0() { return m_nPort0; }
   int GetPort1() { return m_nPort1; }
 
-protected:
+ protected:
   // dependence from 0 to 1
   string m_sTask0, m_sTask1;
   int m_nPort0, m_nPort1;
@@ -324,7 +330,7 @@ CXMLNode *tldm_xml_task_append_attribute_ex(CXMLNode *pTaskNode,
                                             map<string, string> mapValue);
 string tldm_xml_get_attribute(
     CXMLNode *pTaskNode,
-    string sAttrName); // pTaskNode can be pDataRef for connections
+    string sAttrName);  // pTaskNode can be pDataRef for connections
 void tldm_xml_set_attribute(CXMLNode *pTaskNode, string sAttrName,
                             string sValue);
 
@@ -357,7 +363,7 @@ CTldmDependenceAnn *get_tldm_dependence_by_task_and_port(CTldmTaskAnn *pTask0,
                                                          int nPort1);
 void rebuild_parent_outer_level();
 int rebuild_dep_graph(
-    string dep_filename = ""); // do not dump if filename is empty
+    string dep_filename = "");  // do not dump if filename is empty
 int dump_task_pragma(string filename = "task_pragma.c");
 
 // the followings are the suggested functions to access the new polyhedral
@@ -375,4 +381,4 @@ int dump_task_pragma(string filename = "task_pragma.c");
 // int    CTldmTaskAnn::GetTaskType();
 // void   CTldmTaskAnn::SetTaskType(int nTaskType) ;
 
-#endif //_TLDM_ANNOTATION_H_INCLUDED_
+#endif  // TRUNK_LEGACY_TOOLS_IR_TLDM_ANNOTATE_H_

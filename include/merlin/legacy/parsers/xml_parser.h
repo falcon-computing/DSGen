@@ -1,30 +1,31 @@
 
-#ifndef _XML_PARSER_H_INCLUDED_
-#define _XML_PARSER_H_INCLUDED_
+#ifndef TRUNK_LEGACY_TOOLS_PARSERS_SRC_XML_PARSER_H_
+#define TRUNK_LEGACY_TOOLS_PARSERS_SRC_XML_PARSER_H_
 
 #include <stdio.h>
+#include <assert.h>
 
 #include <vector>
 #include <map>
 #include <string>
-using namespace std;
-
-#include <assert.h>
-
 #include "cmdline_parser.h"
+
+using std::map;
+using std::string;
+using std::vector;
 
 class CXMLTree;
 
 class CXMLNodeAnnotationBase {
-public:
+ public:
   virtual string GetClassString() { return "CXMLNodeAnnotationBase"; }
   virtual ~CXMLNodeAnnotationBase() {}
 
-protected:
+ protected:
 };
 
 class XML_Object_Collector {
-public:
+ public:
   void Append(CXMLNodeAnnotationBase *p) { m_vecPointers.push_back(p); }
   void CleanAll() {
     for (size_t i = 0; i < m_vecPointers.size(); i++) {
@@ -37,20 +38,20 @@ public:
     m_vecPointers.clear();
   }
 
-protected:
+ protected:
   vector<CXMLNodeAnnotationBase *> m_vecPointers;
 };
 
 class CXMLNode {
-public:
+ public:
   CXMLNode(CXMLTree *pXMLTree, int dummy) {
-    assert(15479 == dummy); // make sure only XMLTree can create object.
+    assert(15479 == dummy);  // make sure only XMLTree can create object.
     m_pXMLTree = pXMLTree;
     m_Parent = nullptr;
   }
 
   CXMLNode(CXMLTree *pXMLTree, string sName, int dummy) {
-    assert(15479 == dummy); // make sure only XMLTree can create object.
+    assert(15479 == dummy);  // make sure only XMLTree can create object.
     m_pXMLTree = pXMLTree;
     m_Parent = nullptr;
     SetName(sName);
@@ -96,9 +97,9 @@ public:
     pNode->SetParent(this);
   }
   void AppendChild_attr_by_name(string attr_name, CXMLNode *pNode) {
-    if (pNode)
+    if (pNode) {
       AppendChild(pNode);
-    else {
+    } else {
       CXMLNode *pAttr = CreateAppendChild("attribute");
       pAttr->SetParam("name", attr_name);
       CXMLNode *pValue = pAttr->CreateAppendChild("string");
@@ -124,9 +125,8 @@ public:
   }
   CXMLNode *
   GetChildByName(string sName,
-                 int idx = 0) // idx can be not zero when multiple hits
-  {
-    unsigned int i;
+                 int idx = 0) {  // idx can be not zero when multiple hits
+    size_t i;
     int j = 0;
     for (i = 0; i < m_Children.size(); i++) {
       if (m_Children[i]->GetName() == sName) {
@@ -138,8 +138,7 @@ public:
 
     return nullptr;
   }
-  string GetFirstChildValue() // idx can be not zero when multiple hits
-  {
+  string GetFirstChildValue() {  // idx can be not zero when multiple hits
     return GetChildByIndex(0)->GetValue();
   }
   int GetChildNum() { return m_Children.size(); }
@@ -148,12 +147,12 @@ public:
   // level = -1 for all levels
   // level = 0 only for current level no child
   typedef int (*XMLTreeTraverseTestFunc)(CXMLNode *pNode,
-                                         vector<string> &sArguments);
-  vector<CXMLNode *> TraverseByName(string sName, int depth = -1);
-  vector<CXMLNode *> TraverseByName1(string sName, int depth = -1);
+                                         const vector<string> &sArguments);
+  vector<CXMLNode *> TraverseByName(string sName, int level = -1);
+  vector<CXMLNode *> TraverseByName1(string sName, int level = -1);
   vector<CXMLNode *> TraverseByCondition(XMLTreeTraverseTestFunc pfTestFunc,
-                                         vector<string> &sArgument,
-                                         int depth = -1);
+                                         const vector<string> &sArgument,
+                                         int level = -1);
 
   void SetParent(CXMLNode *pParent) { m_Parent = pParent; }
   CXMLNode *GetParent() { return m_Parent; }
@@ -173,13 +172,13 @@ public:
   string GetValue() { return m_sValue; }
   int isComment() { return m_sName == string(""); }
 
-public:
+ public:
   CXMLNode *CloneSubTree(CXMLTree *newTree);
   void RemoveSubTree();
   void ReplaceSubTree(CXMLNode *pNewNode);
   CXMLTree *GetXMLTree() { return m_pXMLTree; }
 
-public:
+ public:
   CXMLNodeAnnotationBase *GetAnnotation(string sAnnName) {
     if (m_mapAnnotations.end() == m_mapAnnotations.find(sAnnName))
       return nullptr;
@@ -196,20 +195,20 @@ public:
     assert(sAnnName != "");
     assert(sAnnName != "CXMLNodeAnnotationBase");
     assert(nullptr ==
-           GetAnnotation(sAnnName)); // must clear the content outside before
-                                     // setting new value
+           GetAnnotation(sAnnName));  // must clear the content outside before
+                                      // setting new value
     m_mapAnnotations[sAnnName] = pAnn;
   }
 
-protected:
-  void TraverseByName(string sName, vector<CXMLNode *> &vecNodes, int depth);
+ protected:
+  void TraverseByName(string sName, vector<CXMLNode *> *vecNodes, int depth);
   void TraverseByCondition(XMLTreeTraverseTestFunc pfTestFunc,
-                           vector<string> &sArgument,
-                           vector<CXMLNode *> &vecNodes, int depth);
+                           const vector<string> &sArgument,
+                           vector<CXMLNode *> *vecNodes, int depth);
 
   CXMLNode *CloneSubTree_in(CXMLTree *newTree, CXMLNode *pParent = nullptr);
 
-protected:
+ protected:
   map<string, string> m_Parameters;
   CXMLNode *m_Parent;
   vector<CXMLNode *> m_Children;
@@ -222,7 +221,7 @@ protected:
 };
 
 class CXMLTree {
-public:
+ public:
   CXMLTree() {}
   ~CXMLTree() { Clean(); }
   CXMLNode *CreateNode(string sName = string("")) {
@@ -231,7 +230,7 @@ public:
     return newNode;
   }
   void Clean() {
-    unsigned int i;
+    size_t i;
     for (i = 0; i < m_NodeList.size(); i++) {
       if (m_NodeList[i]) {
         delete m_NodeList[i];
@@ -247,13 +246,13 @@ public:
   }
   CXMLNode *getRoot() { return m_pRoot; }
 
-protected:
+ protected:
   CXMLNode *m_pRoot;
   vector<CXMLNode *> m_NodeList;
 };
 
 class CXMLParser {
-public:
+ public:
   CXMLNode *parse_from_file(string sFilename);
   CXMLNode *parse_empty(string sName = "top");
   void write_into_file(string sFilename);
@@ -262,15 +261,15 @@ public:
   CXMLNode *build_element_from_string(string sElement);
   string dump_element_to_string(CXMLNode *pNode);
 
-protected:
-  void FormatXMLString(string &str);
+ protected:
+  void FormatXMLString(string *str);
   string dump_parameter_to_string(CXMLNode *pNode);
 
-protected:
+ protected:
   CXMLTree m_XMLTree;
 };
 
-int CheckXMLNodeName(CXMLNode *pNode, vector<string> &vecArg);
+int CheckXMLNodeName(CXMLNode *pNode, const vector<string> &vecArg);
 CXMLNode *SearchNodeNameUnique(CXMLNode *pScope, string sNode,
                                string sName = "");
 CXMLNode *SearchNodeNameFirst(CXMLNode *pScope, string sNode,
@@ -282,12 +281,12 @@ void MergeNodeWithPriority(CXMLNode *pOrgMerged, CXMLNode *pLowPriority);
 // printf("    Set/Get the configuration xxx/hier1/xxx/hier2/.../hierx into
 // value.\n"); printf("    each hier can be \"name\" or
 // \"name:param:param_value\"\n");
-string set_xml_cfg(CInputOptions &options);
+string set_xml_cfg(const CInputOptions &options);
 
 void set_xml_cfg_simple(string xml_file, string node, string _value);
 string get_xml_cfg_simple(string xml_file, string node);
 
 void get_xml_channel_offset(CXMLNode *pRoot, string sTaskName, string sPortName,
-                            vector<int> &vecLBOffset, vector<int> &vecUBOffset);
+                            vector<int> *vecLBOffset, vector<int> *vecUBOffset);
 
-#endif //_XML_PARSER_H_INCLUDED_
+#endif  // TRUNK_LEGACY_TOOLS_PARSERS_SRC_XML_PARSER_H_
