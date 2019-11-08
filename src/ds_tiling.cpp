@@ -26,15 +26,19 @@ void DsGenerator::BuildTiling(void *scope_stmt,
 
     tc = (tc > MAX_TILE_SIZE) ? MAX_TILE_SIZE : tc;
 
-    // Setup tiling design space
     vector<int> options;
-    options.push_back(1);
-    for (int i = 2; i < tc; i *= 2)
-      options.push_back(i);
-    if ((tc & (tc - 1)) != 0) {
+    options.push_back(2);
+    options.push_back(tc);
+
+    // Setup tiling design space
+    // vector<int> options;
+    // options.push_back(1);
+    // for (int i = 2; i < tc; i *= 2)
+    //  options.push_back(i);
+    // if ((tc & (tc - 1)) != 0) {
       // The upper-bound is not power of two, cover it separately
-      options.push_back(tc);
-    } 
+    //  options.push_back(tc);
+    // } 
 
     vector<string> free_ids, fixed_ids; 
     GetShadowedParams(scope_stmt, TILING, free_ids, fixed_ids);
