@@ -1,5 +1,9 @@
 #pragma once
 
+#include <math.h>
+#include <sys/time.h>
+#include <time.h>
+
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -7,47 +11,42 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
-#include <math.h>
-#include <sys/time.h>
-#include <time.h>
-
 #define KEEP_UNUSED 0
 #define KEEP_UNREACHABLE 0
 
-static inline long getUS() {
+static inline int64_t getUS() {
   struct timeval tv;
   gettimeofday(&tv, nullptr);
-  return ((long)tv.tv_sec) * 1000000 + ((long)tv.tv_usec);
+  return ((int64_t)tv.tv_sec) * 1000000 + ((int64_t)tv.tv_usec);
 }
 
-#define getSEC(us) (((float)(us)) / 1000000)
+#define getSEC(us) ((static_cast<float>(us)) / 1000000)
 
 class AccTime;
-extern long INIT_TIME;
-extern vector<AccTime *> accTimes;
+extern int64_t INIT_TIME;
+extern std::vector<AccTime *> accTimes;
 
 #if 0
-#define DEFINE_START_END long start, end
+#define DEFINE_START_END int64_t start, end
 #define STEMP(x) x = getUS();
 #define TIMEP_BOUND(module, start, end, bound)                                 \
   end = getUS();                                                               \
   if (end - start >= bound) {                                                  \
-    cout << "TIME: " << setw(15);                                              \
-    cout << getSEC(end - start) << "," << setw(15)                             \
-         << fmod(getSEC(start - INIT_TIME), 10000) << "," << setw(15)          \
-         << fmod(getSEC(end - INIT_TIME), 10000) << ",\t" << module << endl;   \
+    std::cout << "TIME: " << setw(15);                                         \
+    std::cout << getSEC(end - start) << "," << setw(15)                        \
+              << fmod(getSEC(start - INIT_TIME), 10000) << "," << setw(15)     \
+              << fmod(getSEC(end - INIT_TIME), 10000) << ",\t" << module       \
+              << std::endl;                                                    \
   }
-#define TIMEP(module, start, end) TIMEP_BOUND(module, start, end, 1000000)
+#define TIMEP(module, start, end) TIMEP_BOUND(module, start, end, 10000)
 #define ACCTM(module, start, end)                                              \
-  TIMEP_BOUND(#module, start, end, 1000000)                                    \
+  TIMEP_BOUND(#module, start, end, 10000)                                      \
   static AccTime module##AccTime(#module);                                     \
   {                                                                            \
-    long tmp = module##AccTime.getAccTime();                                   \
+    int64_t tmp = module##AccTime.getAccTime();                                \
     module##AccTime.acc(end - start);                                          \
-    if (module##AccTime.getAccTime() / 10000000 != tmp / 10000000) {           \
-      cout << "TIME" << module##AccTime.to_string() << endl;                   \
+    if (module##AccTime.getAccTime() / 10000 != tmp / 10000) {                 \
+      std::cout << "TIME" << module##AccTime.to_string() << std::endl;         \
     }                                                                          \
   }
 #else
@@ -57,58 +56,60 @@ extern vector<AccTime *> accTimes;
 #define ACCTM(module, start, end)
 #endif
 
-extern map<void *, void *> cache_analysis_induct_map_in_scope;
+extern std::map<void *, void *> cache_analysis_induct_map_in_scope;
 extern void invalidateCache();
 
 class AccTime {
-public:
-  AccTime(string pInfo) {
+ public:
+  explicit AccTime(std::string pInfo) {
     info = "[ACC TIME] " + pInfo;
     timeUS = 0;
     index = accTimes.size();
     accTimes.push_back(this);
   }
 
-  void acc(long pTimeUS) {
+  void acc(int64_t pTimeUS) {
     this->timeUS += pTimeUS;
     ++this->freq;
   }
   static int getIndex() { return AccTime::index; }
-  // string to_string() {
-  //  return info + ": " + std::to_string(getSEC(timeUS)) + "s (" +
-  //         std::to_string(freq) + "times)";
-  //}
+  std::string to_string() {
+    return info + ": " + std::to_string(getSEC(timeUS)) + "s (" +
+           std::to_string(freq) + "times)";
+  }
 
-  long getAccTime() { return this->timeUS; }
+  int64_t getAccTime() { return this->timeUS; }
+  ~AccTime() { std::cout << "TIME" << to_string() << std::endl; }
 
-private:
-  string info;
-  long timeUS;
-  long freq = 0;
+ private:
+  std::string info;
+  int64_t timeUS;
+  int64_t freq = 0;
   static int index;
 };
 
+#define ID(x) x
 #define LOG(level, title, x)                                                   \
   if ((level) == 0) {                                                          \
-    cout << "[" << title << " ERROR][" << __func__ << ", " << __LINE__ << "]"  \
-         << x << endl;                                                         \
+    std::cout << "[" << (title) << " ERROR][" << __func__ << ", " << __LINE__  \
+              << "]" << ID(x) << std::endl;                                    \
   } else if ((level) == 1) {                                                   \
-    cout << "[" << title << " WARNING][" << __func__ << ", " << __LINE__       \
-         << "]" << x << endl;                                                  \
+    std::cout << "[" << (title) << " WARNING][" << __func__ << ", "            \
+              << __LINE__ << "]" << ID(x) << std::endl;                        \
   } else if ((level) == 2) {                                                   \
-    cout << "[" << title << " ALGO][" << __func__ << ", " << __LINE__ << "]"   \
-         << x << endl;                                                         \
+    std::cout << "[" << (title) << " ALGO][" << __func__ << ", " << __LINE__   \
+              << "]" << ID(x) << std::endl;                                    \
   } else if ((level) == 3) {                                                   \
-    cout << "[" << title << " INFO][" << __func__ << ", " << __LINE__ << "]"   \
-         << x << endl;                                                         \
+    std::cout << "[" << (title) << " INFO][" << __func__ << ", " << __LINE__   \
+              << "]" << ID(x) << std::endl;                                    \
   }
-#if 1 // logs
+#if 1  //  logs
 #define PRESTP(title, x) LOG(2, title, x)
 #else
 #define PRESTP(title, x)
 #endif
 
-#if 0 // logs
+#if 0  //  logs
 #define INFOP(title, x) LOG(3, title, x)
 #define ERRORP(title, x) LOG(0, title, x)
 #define WARNINGP(title, x) LOG(1, title, x)
@@ -122,15 +123,15 @@ private:
 #define ALGOP(title, x)
 #endif
 
-template <typename T> static string to_string(vector<T> vec) {
-  stringstream ss;
+template <typename T> static std::string to_string(std::vector<T> vec) {
+  std::stringstream ss;
 
   if (vec.size() == 0) {
     return "";
   }
 
   ss << vec[0];
-  for (int i = 1; i < vec.size(); ++i) {
+  for (size_t i = 1; i < vec.size(); ++i) {
     ss << ", " << vec[i];
   }
 

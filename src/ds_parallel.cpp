@@ -19,7 +19,7 @@ void DsGenerator::BuildParallel(void *scope_stmt,
     if (!m_ast.IsForStatement(scope_stmt)) {
       cout << "skip non for-loop" << endl;
       return;
-    } else if (!m_ast.get_loop_trip_count(scope_stmt, tc)) {
+    } else if (!m_ast.get_loop_trip_count(scope_stmt, &tc)) {
       cout << "skip due to fail to analyze loop tripcount" << endl;
       return;
     }

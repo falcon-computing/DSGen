@@ -1,8 +1,11 @@
-#ifndef LOOP_NODE_H
-#define LOOP_NODE_H
+#ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BSUNODE_H_
+#define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BSUNODE_H_
 
 #include <list>
 #include <map>
+#include <set>
+#include <vector>
+#include <string>
 
 #include "analPragmas.h"
 #include "codegen.h"
@@ -22,27 +25,27 @@ typedef std::map<string, int> array_table_list;
  * access information within the loop body scope.
  */
 class CMirNode {
-  // std::set<string> kernel;
+  //  std::set<string> kernel;
   std::set<void *> kernel_decl;
   std::map<void *, vector<string>> kernel2interface;
   std::set<void *> reduction_decl;
   void init();
   std::set<void *> arr_vars;
 
-public:
+ public:
   CMirNode();
-  CMirNode(SgBasicBlock *ref, bool is_function);
+  CMirNode(SgBasicBlock *body, bool is_function);
   ~CMirNode();
 
-  // main structure
-  SgBasicBlock *ref; // A pointer to the nodea, default as SgBasicBlock*
-  bool is_affine; // FIXME: specify whether the iteration domain is affine, not
-                  // implemented yet
-  bool is_curr_affine; // Current loop level is affine or not
+  //  main structure
+  SgBasicBlock *ref;  //  A pointer to the nodea, default as SgBasicBlock*
+  bool is_affine;     //  FIXME: specify whether the iteration domain is affine,
+                      //  not implemented yet
+  bool is_curr_affine;  //  Current loop level is affine or not
   string iterator_string;
   string iterator_range_string;
   string order_vec_string;
-  // access_table_list access_table;
+  //  access_table_list access_table;
   //  access_table_list full_access_table;
   array_table_list full_array_list;
   map<void *, vector<void *>> full_access_table_v2;
@@ -50,10 +53,10 @@ public:
   sgnode_list child_table;
   sgnode_list pragma_table;
 
-  // additional structure
-  bool is_fine_grain; // consider the impact of pragma, e.g.
-                      // there are sub loops which all have been unrolled
-  bool is_innermost;  // do not consider the impact of pragma
+  //  additional structure
+  bool is_fine_grain;  //  consider the impact of pragma, e.g.
+                       //  there are sub loops which all have been unrolled
+  bool is_innermost;   //  do not consider the impact of pragma
   bool is_pipeline;
   bool is_parallel;
   bool is_function;
@@ -68,10 +71,10 @@ public:
   string funcname_str;
   string funcname_without_args;
   symbol_table_map
-      iterator_table; // stores all names of loop iterator variables
-  range_table_map range_lower_table; // the lower range of the iterators
-  range_table_map range_upper_table; // the upper range of the iterators
-  range_table_map upper_err_table;   // the upper range of the iterators
+      iterator_table;  //  stores all names of loop iterator variables
+  range_table_map range_lower_table;  //  the lower range of the iterators
+  range_table_map range_upper_table;  //  the upper range of the iterators
+  range_table_map upper_err_table;    //  the upper range of the iterators
   set<SgInitializedName *> liveIns;
   set<SgInitializedName *> liveOuts;
 
@@ -86,8 +89,9 @@ public:
   int has_flatten_off();
   int has_reduction();
   int has_line_buffer();
+  int has_partition(bool *turn_on);
 
-  int is_partial_unroll(int &factor);
+  int is_partial_unroll(int *factor);
 
   string get_attribute(string attr);
 
@@ -100,40 +104,40 @@ public:
   CAnalPragma get_tiling_pragma();
 
   vector<CAnalPragma> get_all_pragmas() { return vec_pragma; }
-  // functionality
-  bool order_vector_gen(CSageCodeGen &codegen, void *sg_node_scope,
+  //  functionality
+  bool order_vector_gen(CSageCodeGen *codegen, void *sg_node_scope,
                         void *sg_node);
-  bool analyze_iteration_domain_order(CSageCodeGen &codegen, void *sg_scope_,
-                                      void *sg_stmt_, vector<string> &iterators,
-                                      vector<int> &loop_indices,
-                                      vector<SgExpression *> &lower,
-                                      vector<SgExpression *> &upper,
-                                      vector<int> &ub_limit_vec);
-  bool get_child_task_idx(CSageCodeGen &codegen, void *sg_scope_,
-                          void *sg_child_, int &index);
+  bool analyze_iteration_domain_order(CSageCodeGen *codegen, void *sg_scope_,
+                                      void *sg_stmt_, vector<string> *iterators,
+                                      vector<int> *loop_indices,
+                                      vector<SgExpression *> *lower,
+                                      vector<SgExpression *> *upper,
+                                      vector<int> *ub_limit_vec);
+  bool get_child_task_idx(CSageCodeGen *codegen, void *sg_scope_,
+                          void *sg_child_, size_t *index);
   bool isAffineRange();
-  //	bool parse_full_accesses(CSageCodeGen &codegen, int dim, void* arr_init,
-  //				vector<map<void*, int>> &index_expr_full, int &mod_size);
+  //    bool parse_full_accesses(CSageCodeGen *codegen, int dim, void* arr_init,
+  //                vector<map<void*, int>> &index_expr_full, int &mod_size);
 
-  //	bool check_relation(CSageCodeGen &codegen, int dim,
-  //				void *arr_init,  void * curr_loop, bool &recur_tag);
+  //    bool check_relation(CSageCodeGen *codegen, int dim,
+  //                void *arr_init,  void * curr_loop, bool &recur_tag);
   void node_liveness_analysis();
 
-  // interface
+  //  interface
   SgBasicBlock *get_ref() { return ref; }
   SgForStatement *get_parent_for();
-  int get_acc_num() { return arraycount; };
-  bool isFineGrain() { return is_fine_grain; };
-  bool isFunction() { return is_function; };
+  int get_acc_num() { return arraycount; }
+  bool get_fine_grain() { return is_fine_grain; }
+  bool isFunction() { return is_function; }
   string unparseToString() { return ref->unparseToString(); }
   void print_access();
   void print_child();
   void print_parent();
 
-  // Interface functions
+  //  Interface functions
   string get_fun_name(bool with_arg = true) const {
     return with_arg ? funcname_str : funcname_without_args;
-  };
+  }
 #if 0
     void add_one_kernel(string name) {
         kernel.insert(name);
@@ -177,8 +181,8 @@ public:
 
   bool is_autoFG();
 
-  void set_full_access_table_v2(CSageCodeGen &codegen, bool recursively = true);
-  void parse_sub_func_access(CSageCodeGen &codegen, void *sg_decl, void *sg_arr,
+  void set_full_access_table_v2(CSageCodeGen *codegen, bool recursively = true);
+  void parse_sub_func_access(CSageCodeGen *codegen, void *sg_decl, void *sg_arr,
                              void *sg_arr_local);
 
   void add_pragma(CAnalPragma pragma) {
@@ -195,10 +199,12 @@ public:
     return;
   }
 
-  void get_opt_vars(CSageCodeGen &codegen, string opt_str,
-                    vector<void *> &vars);
+  void get_opt_vars(CSageCodeGen *codegen, string opt_str,
+                    vector<void *> *vars);
+  void collectVendorOptPragmas(CSageCodeGen *codegen,
+                               std::vector<void *> *HLS_pragmas);
 
-protected:
+ protected:
   CMirNode *parent_node;
   CMirNode *func_node;
   set<CMirNode *> child_node_set;
@@ -206,9 +212,6 @@ protected:
   vector<CMirNode *> predecessors;
   set<CMirNode *> predecessor_set;
   bool ParseLoopBound(SgExpression *bound);
-  void getLoopLiveVariables(LivenessAnalysis *liv, SgForStatement *loop,
-                            std::set<SgInitializedName *> &liveIns,
-                            std::set<SgInitializedName *> &liveOuts);
 };
 
-#endif
+#endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BSUNODE_H_

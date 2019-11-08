@@ -1,5 +1,5 @@
-#ifndef _COARSE_PARALLEL_H_INCLUDED_
-#define _COARSE_PARALLEL_H_INCLUDED_
+#ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_COARSE_PARALLEL_H_
+#define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_COARSE_PARALLEL_H_
 
 #include "rose.h"
 
@@ -12,22 +12,16 @@
 #include "tldm_annotate.h"
 #include "xml_parser.h"
 
-using namespace std;
-// using namespace SageInterface;
-// using namespace SageBuilder;
-using namespace MarsProgramAnalysis;
-using namespace MerlinStreamModel;
+int coarse_parallel_intel_top(CSageCodeGen *codegen, void *pTopFunc,
+                              const CInputOptions &options);
 
-int coarse_parallel_intel_top(CSageCodeGen &codegen, void *pTopFunc,
-                              CInputOptions &options);
+int coarse_parallel_xilinx_top(CSageCodeGen *codegen, void *pTopFunc,
+                               const CInputOptions &options);
 
-int coarse_parallel_xilinx_top(CSageCodeGen &codegen, void *pTopFunc,
-                               CInputOptions &options);
-
-bool generate_parallel_xilinx(CSageCodeGen &codegen, CMarsIr *mars_ir,
+bool generate_parallel_xilinx(CSageCodeGen *codegen, CMarsIr *mars_ir,
                               CMirNode *node);
 
-bool generate_parallel_intel(CSageCodeGen &codegen, CMarsIr *mars_ir,
-                             CStreamIR *stream_ir, CMirNode *node,
-                             MemoryBurst &burst_instance);
-#endif
+bool generate_parallel_intel(CSageCodeGen *codegen, CMarsIr *mars_ir,
+                             MerlinStreamModel::CStreamIR *stream_ir,
+                             CMirNode *node, MemoryBurst *burst_instance);
+#endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_COARSE_PARALLEL_H_

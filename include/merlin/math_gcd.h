@@ -1,16 +1,12 @@
-#ifndef MATHGCD_H
-#define MATHGCD_H
+#ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MATH_GCD_H_
+#define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MATH_GCD_H_
 
 #include <vector>
-
-using namespace std;
 
 int gcd2(int a, int b);
 int gcd3(int a, int b, int c);
 int intdiv(int a, int b);
-// int ngcd(int *a, int n);
-int ngcd(vector<int> a, int n);
+int ngcd(std::vector<int> a, int n);
 bool isPo2(int bank);
-// void scalePo2(int base, int &factor);
 
-#endif
+#endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MATH_GCD_H_

@@ -1,6 +1,9 @@
-#ifndef _MEMORY_COALESCING_XILINX_H_INCLUDED_
-#define _MEMORY_COALESCING_XILINX_H_INCLUDED_
-
+#ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MEMORY_COALESCING_XILINX_H_
+#define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MEMORY_COALESCING_XILINX_H_
+#include <map>
+#include <set>
+#include <vector>
+#include <string>
 #include "rose.h"
 
 #include "PolyModel.h"
@@ -14,15 +17,10 @@
 #include "tldm_annotate.h"
 #include "xml_parser.h"
 
-using namespace std;
-// using namespace SageInterface;
-// using namespace SageBuilder;
-using namespace MarsProgramAnalysis;
-
 class MemoryCoalescingXilinx {
-  CSageCodeGen &m_ast;
+  CSageCodeGen *m_ast;
   void *mTopFunc;
-  CInputOptions &mOptions;
+  CInputOptions mOptions;
   CMarsIr mMars_ir;
   CMarsIrV2 mMars_ir_v2;
   int mBitWidth;
@@ -31,14 +29,15 @@ class MemoryCoalescingXilinx {
   bool mNaiveHLS;
   bool mEnableCDesign;
   bool mEnableSubOptimal;
-  set<int> mBitWidthSet;
+  std::set<int> mBitWidthSet;
   size_t m_length_threshold;
   bool mCpp_design;
   bool mWideBusFlag;
+  std::set<string> mCoalescingHeader;
 
-public:
-  MemoryCoalescingXilinx(CSageCodeGen &Codegen, void *pTopFunc,
-                         CInputOptions &Options)
+ public:
+  MemoryCoalescingXilinx(CSageCodeGen *Codegen, void *pTopFunc,
+                         const CInputOptions &Options)
       : m_ast(Codegen), mTopFunc(pTopFunc), mOptions(Options), mBitWidth(512),
         mBitWidthSpecified(false), mMaxDimension(5), mNaiveHLS(false),
         mEnableCDesign(false), mEnableSubOptimal(false),
@@ -49,10 +48,10 @@ public:
 
   ~MemoryCoalescingXilinx();
 
-private:
+ private:
   bool update_interface(CMirNode *fNode);
 
-  void init(CSageCodeGen &Codegen);
+  void init(CSageCodeGen *Codegen);
 
   void collectInterfaceInfo();
 
@@ -75,10 +74,12 @@ private:
 
   bool isMemcpy(void *func_call);
 
-  bool updateMemcpyCallWithLargeBitWidth(const MemcpyInfo &info, void *scope);
+  bool updateMemcpyCallWithLargeBitWidth(const MemcpyInfo &info,
+                                         void *orig_memcpy_call);
   bool isSupportedType(void *base_type);
 
-  string StripSignnessInType(const string &org_type, bool replace_space);
+  std::string StripSignnessInType(const std::string &org_type,
+                                  bool replace_space);
 
   void *AddCastToStripSignness(void *address_exp, void *base_type,
                                const MemcpyInfo &info);
@@ -87,38 +88,55 @@ private:
 
   void AddDataTypeHeader(void *scope);
 
-  void AddPartitionPragma(const string &buf_name, void *stmt,
+  void AddPartitionPragma(const std::string &buf_name, void *stmt,
                           const MemcpyInfo &info);
 
   bool checkInvalidBitWidth(int opt_bitwidth, int orig_bitwidth);
 
   bool updateSingleAssignWithLargeBitWidth(const SingleAssignInfo &info,
-                                           void *base_type, void *orig_assign,
-                                           void *func_decl);
+                                           void *base_type, void *orig_access,
+                                           void *kernel_decl);
 
   bool isUnsupportedSingleAssign(void *single_assign);
 
   void *createBuffer(void *base_type, void *sg_scope, void *func_decl);
 
-  bool check_declaration(void *func_decl, string var_name);
+  bool check_declaration(void *func_decl, std::string var_name);
 
-  bool detect_access_in_paralleled_loop(void *ref);
+  void detect_access_in_paralleled_loop(void *ref, ArgumentInfo *info);
 
-private:
-  set<void *> mGlobals_with_memcpy_header;
-  set<void *> mGlobals_with_data_type_header;
-  vector<void *> mFunc_defs;
-  map<void *, set<string>> mMacroCall;
-  // key is the first declaration with no definition
-  map<void *, vector<ArgumentInfo>> mFunc2Info;
-  set<void *> mDead_func_calls;
+  void auto_cache_for_coalescing();
 
-  const vector<string> m_supported_types{
-      "int",   "unsigned int", "signed int",
-      "char",  "signed char",  "unsigned char",
-      "short", "signed short", "unsigned short",
-      "long",  "signed long",  "unsigned long",
-      "float", "double"};
+  void parse_memcpy_info(void *func_call,
+                         const std::map<void *, int> &paralists,
+                         std::vector<ArgumentInfo> *arg_info_);
+
+ private:
+  std::set<void *> mGlobals_with_memcpy_header;
+  std::set<void *> mGlobals_with_data_type_header;
+  std::vector<void *> mFunc_defs;
+  std::map<void *, std::set<std::string>> mMacroCall;
+  //  key is the first declaration with no definition
+  std::map<void *, std::vector<ArgumentInfo>> mFunc2Info;
+  std::set<void *> mDead_func_calls;
+
+  const std::vector<std::string> m_supported_types{"int",
+                                                   "unsigned int",
+                                                   "signed int",
+                                                   "char",
+                                                   "signed char",
+                                                   "unsigned char",
+                                                   "short",
+                                                   "signed short",
+                                                   "unsigned short",
+                                                   "long",
+                                                   "signed long",
+                                                   "unsigned long",
+                                                   "long long",
+                                                   "signed long long",
+                                                   "unsigned long long",
+                                                   "float",
+                                                   "double"};
 };
 
-#endif
+#endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MEMORY_COALESCING_XILINX_H_

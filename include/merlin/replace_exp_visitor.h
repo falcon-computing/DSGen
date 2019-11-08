@@ -1,29 +1,30 @@
-#ifndef __REPLACE_EXP_VISITOR_H__
-#define __REPLACE_EXP_VISITOR_H__
-#include "codegen.h"
-#include "mars_ir_v2.h"
+#ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_REPLACE_EXP_VISITOR_H_
+#define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_REPLACE_EXP_VISITOR_H_
 #include <unordered_set>
 #include <unordered_map>
 
+#include "codegen.h"
+#include "mars_ir_v2.h"
+
 class ReplaceExpVisitor {
-public:
+ public:
   enum VisitMode { Replace = 0, ConstCheck, DimCheck, PtrArrayConvert };
 
-  ReplaceExpVisitor(CSageCodeGen &codegen, CMarsIrV2 &mars_ir_v2)
-      : m_ast(codegen), mars_ir(mars_ir_v2) {}
+  ReplaceExpVisitor(CSageCodeGen *codegen, CMarsIrV2 *p_mars_ir_v2)
+      : m_ast(codegen), mars_ir(p_mars_ir_v2) {}
   ~ReplaceExpVisitor() {}
 
   void EmbedConstInitializers();
 
-private:
+ private:
   void ResetErrorFlags();
 
   void ReplacePtrToArrDecl(SgVariableDeclaration *);
 
   void CheckConstDecl(SgInitializedName *);
 
-  // Single purpose use only
-  // May consider promote to codegen, and use template class
+  //  Single purpose use only
+  //  May consider promote to codegen, and use template class
   void VisitBinaryOp(SgBinaryOp *);
 
   void VisitAssignInitializer(SgAssignInitializer *);
@@ -64,13 +65,13 @@ private:
   void InvertVal(SgTy *cast_val, int const_type);
 
   template <typename SgTy, typename ValTy>
-  void CastVal(int const_type, SgValueExp *&src_val);
+  void CastVal(int const_type, SgValueExp **src_val);
 
   template <typename NodeTy> NodeTy *isa(SgNode *node);
 
-private:
-  CSageCodeGen &m_ast;
-  CMarsIrV2 &mars_ir;
+ private:
+  CSageCodeGen *m_ast;
+  CMarsIrV2 *mars_ir;
   bool is_invalid;
   bool is_non_const;
   bool has_no_initializer;
@@ -83,6 +84,6 @@ private:
 
   VisitMode mode;
 
-  unordered_map<void *, void *> ori_exp_map;
+  std::unordered_map<void *, void *> ori_exp_map;
 };
-#endif
+#endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_REPLACE_EXP_VISITOR_H_

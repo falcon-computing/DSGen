@@ -1,20 +1,18 @@
-//#ifndef _CMOST_H_INCLUDED_
-//#define _CMOST_H_INCLUDED_
-
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <assert.h>
-//#include <math.h>
+#pragma once
+//  #include <stdio.h>
+//  #include <stdlib.h>
+//  #include <assert.h>
+//  #include <math.h>
 #include <stddef.h>
 
-// extern void * malloc(size_t size);
-// extern void free(void*) __THROW ;
-//__BEGIN_NAMESPACE_STD
-// extern void free (void *__ptr) __THROW;
-//__END_NAMESPACE_STD
+//  extern void * malloc(size_t size);
+//  extern void free(void*) __THROW ;
+//  __BEGIN_NAMESPACE_STD
+//  extern void free (void *__ptr) __THROW;
+//  __END_NAMESPACE_STD
 
-//#include "cmost_test_common.h"
-//#include "cl_platform.h"
+//  #include "cmost_test_common.h"
+//  #include "cl_platform.h"
 
 #define CMOST_CC
 #define CMOSTCC
@@ -42,7 +40,7 @@ void cmost_write_file(void *buffer, const char *file_name, size_t size);
 void cmost_load_file(void *buffer, const char *file_name, size_t size);
 
 void cmost_start_timer(int i);
-void cmost_read_timer_new(int i, float *sec); // return the time in seconds
+void cmost_read_timer_new(int i, float *sec);  //  return the time in seconds
 
 int cmost_free(void *a);
 int cmost_dump(void *a, const char *filename);
@@ -52,4 +50,4 @@ void __merlin_access_range(
     ...
 #endif
 );
-//#endif //_CMOST_H_INCLUDED_
+//  #endif //  _CMOST_H_INCLUDED_

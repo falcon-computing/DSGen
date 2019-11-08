@@ -1,4 +1,4 @@
-//////////////////////////////////////////////////////////////
+//  ///////////////////////////////////////////////////////////  /
 //  stream_ir.h
 //
 //  A source file in Merlin compiler
@@ -19,32 +19,35 @@
 //  Author(s):
 //      Peng Zhang    (2017-5-10) peng@falcon-computing.com
 //      Youxiang Chen (2017-5-17) youxiangchen@falcon-computing.com
-//////////////////////////////////////////////////////////////
+//  ///////////////////////////////////////////////////////////  /
 
 #pragma once
+#include <map>
+#include <set>
+#include <vector>
+#include <string>
 
 #include "codegen.h"
 #include "ir_types.h"
 #include "mars_ir.h"
 #include "mars_ir_v2.h"
 #include "program_analysis.h"
-using namespace std;
 
 namespace MerlinStreamModel {
 
 const int DEFAULT_CHANNEL_DEPTH = 32;
-// handling the common functionality among node
-// 1. AST link (m_ast, m_ref)
-// 2. attribute operation
-// 3. pragma processing
+//  handling the common functionality among node
+//  1. AST link (m_ast, m_ref)
+//  2. attribute operation
+//  3. pragma processing
 class CStreamBase {
-public:
+ public:
   CStreamBase(CMarsAST_IF *ast, CMarsIr *mars_ir, CMarsIrV2 *mars_ir_v2) {
     m_ast = ast;
-    // liangz: create CMarsIrV2 if it is nullptr
+    //  liangz: create CMarsIrV2 if it is nullptr
     if (!mars_ir) {
       CMarsIr *my_mars_ir = new CMarsIr();
-      my_mars_ir->get_mars_ir(*ast, ast->GetProject(), true);
+      my_mars_ir->get_mars_ir(ast, ast->GetProject(), true);
       m_mars_ir = my_mars_ir;
       isCMarsIRCreated = true;
     } else {
@@ -52,7 +55,7 @@ public:
     }
     if (!mars_ir_v2) {
       CMarsIrV2 *my_mars_ir_v2 = new CMarsIrV2();
-      my_mars_ir_v2->build_mars_ir(*ast, ast->GetProject());
+      my_mars_ir_v2->build_mars_ir(ast, ast->GetProject());
       m_mars_ir_v2 = my_mars_ir_v2;
       isCMarsIR2Created = true;
     } else {
@@ -81,32 +84,31 @@ public:
   }
   CMarsAST_IF *get_ast() { return m_ast; }
 
-  // Attributes are coded as pragmas in stream model program
+  //  Attributes are coded as pragmas in stream model program
   void set_attribute(string key, string value) { m_attr[key] = value; }
   string get_attribute(string key) { return m_attr[key]; }
   void append_attribute(string key, string value) {
     m_attr[key] += "," + value;
   }
 
-  // if sg_pragma is nullptr, the statement before m_ref will be tried for the
-  // sg_pragma if sg_pragma is still nullptr, a new pragma will be generated
-  void parse_pragma(void *sg_pragma = nullptr);  // pragma -> attribute
-  void update_pragma(void *sg_pragma = nullptr); // attribute -> pragma
+  //  if sg_pragma is nullptr, the statement before m_ref will be tried for the
+  //  sg_pragma if sg_pragma is still nullptr, a new pragma will be generated
+  void parse_pragma(void *sg_pragma = nullptr);   //  pragma -> attribute
+  void update_pragma(void *sg_pragma = nullptr);  //  attribute -> pragma
 
   void *get_ref() { return m_ref; }
   virtual string print_ref() {
     return m_ast->_up(m_ref, 30);
-  } // display length to be adjustable
+  }  //  display length to be adjustable
   virtual string print_attribute();
   virtual string print() { return print_ref() + " : " + print_attribute(); }
 
-  // simply get the previous stmt, can be overloaded
+  //  simply get the previous stmt, can be overloaded
   virtual void *get_pragma_by_ref();
 
   string get_pragma_type() { return m_pragma_type; }
 
-protected:
-protected:
+ protected:
   CMarsAST_IF *m_ast;
   CMarsIr *m_mars_ir;
   CMarsIrV2 *m_mars_ir_v2;
@@ -115,20 +117,27 @@ protected:
   string m_pragma_type;
   bool isCMarsIRCreated = false;
   bool isCMarsIR2Created = false;
+
+ public:
+  map<void *, vector<void *>> map_kernel_spawn_pragma;
+  map<void *, vector<void *>> map_kernel_spawn_kernel;
+  vector<string> vec_auto_kernel;
+  vector<void *> vec_merlin_stream;
+  map<void *, void *> map_merlin_stream_depth;
 };
 
-///////////////////////////////////////////////////////
-// CStreamNode Class
-///////////////////////////////////////////////////////
+//  ////////////////////////////////////////////////////  /
+//  CStreamNode Class
+//  ////////////////////////////////////////////////////  /
 class CStreamPort;
 class CStreamNode : public CStreamBase {
-public:
+ public:
   CStreamNode(CMarsAST_IF *ast, void *ref, CMarsIr *mars_ir = nullptr,
               CMarsIrV2 *mars_ir_v2 = nullptr)
       : CStreamBase(ast, ref, PRAGMA_TYPE_NODE, mars_ir, mars_ir_v2) {}
   virtual ~CStreamNode() {}
 
-public:
+ public:
   vector<CStreamPort *> get_ports() { return m_ports; }
   virtual string print_ref();
   void *get_scope();
@@ -136,25 +145,24 @@ public:
 
   vector<int> get_md_attribute();
 
-  void get_func_call_decl(void *&func_call, void *&func_decl);
+  void get_func_call_decl(void **func_call, void **func_decl);
 
   vector<void *> get_para_loops();
 
-protected:
+ protected:
   vector<CStreamPort *> m_ports;
 
-protected: // for hierarchical structure
+ protected:  //  for hierarchical structure
   CStreamNode *m_parent;
   vector<CStreamNode *> m_children;
 };
 
-///////////////////////////////////////////////////////
-// CStreamPort Class
-///////////////////////////////////////////////////////
+//  ////////////////////////////////////////////////////  /
+//  CStreamPort Class
+//  ////////////////////////////////////////////////////  /
 class CStreamChannel;
 class CStreamPort : public CStreamBase {
-
-public:
+ public:
   CStreamPort(CMarsAST_IF *ast, void *ref, void *array, CStreamNode *node,
               CMarsIr *mars_ir = nullptr, CMarsIrV2 *mars_ir_v2 = nullptr)
       : CStreamBase(ast, ref, PRAGMA_TYPE_PORT, mars_ir, mars_ir_v2) {
@@ -163,7 +171,7 @@ public:
   }
   virtual ~CStreamPort() {}
 
-public:
+ public:
   CStreamChannel *get_fifo_by_ref(void *ref) { return m_map_ref2fifo[ref]; }
   vector<void *> get_refs() {
     vector<void *> ret;
@@ -195,22 +203,22 @@ public:
   }
   CStreamNode *get_node() { return m_node; }
 
-  void get_func_call_decl(void *&func_call, void *&func_decl);
+  void get_func_call_decl(void **func_call, void **func_decl);
 
   int get_sufficient_channel_size(void *sp_ref);
 
-protected:
+ protected:
   map<void *, CStreamChannel *> m_map_ref2fifo;
   CStreamNode *m_node;
 
   void *m_array;
 };
 
-///////////////////////////////////////////////////////
-// CStreamChannel Class
-///////////////////////////////////////////////////////
+//  ////////////////////////////////////////////////////  /
+//  CStreamChannel Class
+//  ////////////////////////////////////////////////////  /
 class CStreamChannel : public CStreamBase {
-public:
+ public:
   CStreamChannel(CMarsAST_IF *ast, void *ref)
       : CStreamBase(ast, ref, PRAGMA_TYPE_CHANNEL) {}
 
@@ -222,14 +230,14 @@ public:
     return my_atoi(channel_depth);
   }
 
-protected:
+ protected:
 };
 
-///////////////////////////////////////////////////////
-// CStreamBuffer Class
-///////////////////////////////////////////////////////
+//  ////////////////////////////////////////////////////  /
+//  CStreamBuffer Class
+//  ////////////////////////////////////////////////////  /
 class CStreamBuffer : public CStreamBase {
-public:
+ public:
   CStreamBuffer(CMarsAST_IF *ast, void *ref)
       : CStreamBase(ast, ref, PRAGMA_TYPE_BUFFER) {
     wr_port = rd_port = nullptr;
@@ -244,16 +252,16 @@ public:
 
   CStreamPort *get_read_port() { return rd_port; }
 
-protected:
+ protected:
   CStreamPort *wr_port;
   CStreamPort *rd_port;
 };
 
-///////////////////////////////////////////////////////
-// CStreamIR class - the main class for operations and containers
-///////////////////////////////////////////////////////
+//  ////////////////////////////////////////////////////  /
+//  CStreamIR class - the main class for operations and containers
+//  ////////////////////////////////////////////////////  /
 class CStreamIR : public CStreamBase {
-public:
+ public:
   CStreamIR(CMarsAST_IF *ast, CMarsIr *mars_ir, CMarsIrV2 *mars_ir_v2)
       : CStreamBase(ast, mars_ir, mars_ir_v2), m_num_stream(0) {}
 
@@ -261,81 +269,100 @@ public:
 
   void clear();
 
-public:
-  void SpawnKernelTransform(); // build stream model C-code from "spawn" pragmas
+ public:
+  bool CheckIfHaveOldStream(void *decl);
+  void CheckStreamLecality(void *decl);
+  void ChannelReplacement();
+  void GetAllStreamDecl();
+  void InsertChannelDecl();
+  void InsertChannelReadWrite();
+  void CleanMerlinStream();
+  void CodeTransformForSpawnKernels();
+  void CheckSpawnLegality(CMarsIr *mars_ir, void *pragma);
+  void GetChannelAttributesFromInit(void *init, void **depth_ref,
+                                    string *opencl_channel_type);
+  void InsertChannelExtension(void *decl, set<void *> *processed_global);
+  void InsertChannelFuncDefinition(void *data_type, string wr_channel_func,
+                                   string rd_channel_func);
 
-  // Parse the Stream Model from AST
-  void ParseStreamModel(); // parse stream model from ast
+  void
+  SpawnKernelTransform();  // build stream model C-code from "spawn" pragmas
+  void UpdateTopKernelInteraface(void *top_kernel);
 
-  // Create the Stream Model Node, and transform AST
-  CStreamNode *SpawnNodeFromAST(void *node_stmt, string &err_msg,
+  //  Parse the Stream Model from AST
+  void ParseStreamModel();  //  parse stream model from ast
+
+  //  Create the Stream Model Node, and transform AST
+  CStreamNode *SpawnNodeFromAST(void *node_stmt, string *err_msg,
                                 bool is_prefetch_only = false,
                                 set<void *> *prefetch_vars = nullptr);
 
-  // Create the Stream Model Node for memory access
+  //  Create the Stream Model Node for memory access
   CStreamNode *SpawnMemoryAccessFromAST(void *sg_init, void *sg_scope,
-                                        string &err_msg);
+                                        string *err_msg);
 
-  // Access the Stream Model
+  //  Access the Stream Model
   CStreamNode *
-  FindNodeByAST(void *ref); // trace upward to find the containing node
+  FindNodeByAST(void *stmt);  //  trace upward to find the containing node
   CStreamPort *
-  FindPortByAST(void *ref); // trace upward to find the containing port
-  CStreamPort *FindMatchPort(void *ref); // match by SSST condition
+  FindPortByAST(void *ref);  //  trace upward to find the containing port
+  CStreamPort *FindMatchPort(void *ref);  //  match by SSST condition
   CStreamChannel *
-  FindChannelByAST(void *ref);               // trace upward to find the channel
-  CStreamBuffer *FindBufferByAST(void *ref); // trace upward to find the buffer
+  FindChannelByAST(void *ref);  //  trace upward to find the channel
+  CStreamBuffer *
+  FindBufferByAST(void *ref);  //  trace upward to find the buffer
 
   vector<CStreamChannel *> get_fifos() { return m_fifos; }
+  bool is_fifo(void *var);
 
-  // Generate the Concurrent Code
+  //  Generate the Concurrent Code
   void ConcurrentCodeGeneration(
-      vector<void *> &top_kernels,
+      const vector<void *> &top_kernels,
       map<void *, vector<void *>>
-          &kernel_autokernel); // generate concurrent code with real kernels
+          *kernel_autokernel);  //  generate concurrent code with real kernels
 
   void CodeGeneration_channel(CStreamChannel *fifo,
-                              set<void *> &processed_globals);
+                              set<void *> *processed_globals);
 
-  void CodeGeneration_node(CStreamNode *node, vector<void *> &vec_top_kernel,
-                           set<void *> &processed_globals,
-                           map<void *, vector<void *>> &kernel_autokernel);
+  void CodeGeneration_node(CStreamNode *node, const vector<void *> &top_kernels,
+                           set<void *> *processed_globals,
+                           map<void *, vector<void *>> *kernel_autokernel);
 
   void CodeGeneration_port(CStreamPort *port);
 
   vector<CStreamPort *> CreateStreamPortBySeparation(
-      CStreamNode *node, void *sg_arg, map<void *, void *> &map_spref2snref,
+      CStreamNode *node, void *sg_arg, map<void *, void *> *map_spref2snref,
       CMerlinMessage *msg = nullptr, bool is_skip_node_create = false,
-      void *sg_prefetch_scope = nullptr);
+      void *sg_kernel = nullptr);
 
   int contains_channel() { return m_fifos.size() > 0; }
 
   int CheckStreamPortSeparability(CStreamNode *node, void *sg_arg,
                                   CMerlinMessage *msg = nullptr);
   int CheckStreamPortSeparability(void *sg_scope,
-                                  vector<CMerlinMessage> &vec_msg,
+                                  vector<CMerlinMessage> *vec_msg,
                                   set<void *> *checked_names = nullptr);
   bool is_node_kernel(void *func);
   bool is_port_kernel(void *func);
   CStreamPort *get_matched_port(void *func);
   CStreamNode *get_matched_node(void *func);
 
-protected:
+ protected:
   void InheritPort(CStreamPort *s_p, CStreamNode *s_n_parent,
                    CStreamNode *s_n_child);
   void ConnectPort(CStreamPort *s_p0, CStreamPort *s_p1);
   void EmbedPort(CStreamPort *s_p0, void *embed_pos);
 
-public:
+ public:
   CStreamNode *CreateNode(void *ref, CMarsIr *, CMarsIrV2 *);
   CStreamPort *CreatePort(void *ref, void *array, CStreamNode *node, CMarsIr *,
                           CMarsIrV2 *);
   CStreamChannel *CreateChannels(void *ref);
   CStreamBuffer *CreateBuffer(void *ref);
-  // bool prefetch = false;
-  // bool spawn = false;
+  //  bool prefetch = false;
+  //  bool spawn = false;
 
-protected: // containers
+ protected:  //  containers
   vector<CStreamNode *> m_nodes;
   vector<CStreamPort *> m_ports;
   vector<CStreamChannel *> m_fifos;
@@ -344,4 +371,4 @@ protected: // containers
 
   void *m_content;
 };
-} // namespace MerlinStreamModel
+}  //  namespace MerlinStreamModel

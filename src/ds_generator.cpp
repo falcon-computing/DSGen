@@ -21,7 +21,7 @@
 
 int DsGenerator::InitScopePragmas() {
   vector<CMirNode *> fn_loop_nodes;
-  mars_ir_.get_topological_order_nodes(fn_loop_nodes);
+  mars_ir_.get_topological_order_nodes(&fn_loop_nodes);
   for (auto &node: fn_loop_nodes) {
     if (node->is_function) 
       continue;
@@ -31,6 +31,7 @@ int DsGenerator::InitScopePragmas() {
     
 
     string loop_id = "L"+ to_string(loop_index_++);
+    //TODO (Min) As a showcase we disable these functions
     FnHandler build_pipeline = &DsGenerator::BuildPipeline;
     TraverseLoopDesignSpace(build_pipeline, loop_scope, loop_id);  
     FnHandler build_tiling = &DsGenerator::BuildTiling;
@@ -42,10 +43,12 @@ int DsGenerator::InitScopePragmas() {
   // As optwidth does not focus on loops but every pragmas
   // We process it separately.
   
-  vector<void *> vec_kernels = mars_ir_v2_.get_top_kernels();
-  for (auto kernel : vec_kernels) {
-    BuildBitWidthOpt(kernel);
-  }
+  // TODO(Min) Potential bugs on program analysis.
+  // Will reenable after the issue has been filed and fixed.
+  //vector<void *> vec_kernels = mars_ir_v2_.get_top_kernels();
+  //for (auto kernel : vec_kernels) {
+  //  BuildBitWidthOpt(kernel);
+  //}
 
   return 0; 
 } 
@@ -129,7 +132,7 @@ void DsGenerator::SetUserPragmaInfo(void *scope_stmt,
   map<string, pair<vector<string>, vector<string>>> map_param;
   string str_pragma = m_ast.GetPragmaString(pragma_stmt);
   string sFilter, sCmd;
-  tldm_pragma_parse_whole(str_pragma, sFilter, sCmd, map_param);   
+  tldm_pragma_parse_whole(str_pragma, &sFilter, &sCmd, &map_param);   
   switch (pragma_ty) {
     case PIPELINE: {
       PragmaInfo<string> *pragma_info = new PragmaInfo<string>();
@@ -264,6 +267,28 @@ void DsGenerator::GetShadowedParams(void *stmt,
 }
 
 void DsGenerator::InsertCreatedPragmasAndOutputJson() {
+  Json::Value config_values;
+  config_values["project.name"] = "dse_project";// TODO (Min)replace with proj name;
+  config_values["project.backup"] = "BACKUP_ERROR";
+  config_values["project.fast-output-num"] = 4;
+  config_values["timeout.exploration"] = 90;
+  config_values["timeout.transform"] = 5;
+  config_values["timeout.hls"] = 20;
+  config_values["timeout.bitgen"] = 480;
+  config_values["evaluate.command.transform"] = "make mcc_acc";
+  config_values["evaluate.command.hls"] = "make mcc_estimate";
+  config_values["evaluate.command.bitgen"] = "make mcc_bitgen";
+  config_values["evaluate.worker-per-part"] = 2;
+  config_values["evaluate.max-util.BRAM"] = 0.8;
+  config_values["evaluate.max-util.DSP"] = 0.8;
+  config_values["evaluate.max-util.LUT"] = 0.8;
+  config_values["evaluate.max-util.FF"] = 0.8;
+  config_values["search.algorithm.name"] = "gradient";
+  config_values["search.algorithm.exhaustive.batch-size"] = 2;
+  config_values["search.algorithm.gradient.latency-threshold"] = 64;
+  config_values["search.algorithm.gradient.fine-grained-first"] = true;
+  config_values["search.algorithm.gradient.quality-type"] = "performance";
+  config_values["design-space.max-part-num"] = 4;
   for (auto &scope_pragmas: map_scope_pragmas_) {
     auto pragmas = scope_pragmas.second;
     if (pragmas->exist(PIPELINE)) {
@@ -309,7 +334,8 @@ void DsGenerator::InsertCreatedPragmasAndOutputJson() {
       }
     }
   }
-  fout << item;
+  config_values["design-space.definition"] = item,
+  fout << config_values;
 }
 
 int ds_generator_top(CSageCodeGen &m_ast, void *pTopFunc,

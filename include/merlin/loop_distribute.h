@@ -1,43 +1,48 @@
-#ifndef __LOOP_DISTRIBUTE_H__
-#define __LOOP_DISTRIBUTE_H__
-#include "cmdline_parser.h"
+#ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_LOOP_DISTRIBUTE_H_
+#define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_LOOP_DISTRIBUTE_H_
+#include <set>
+#include <vector>
+
 #include "codegen.h"
 #include "mars_ir_v2.h"
 
 class LoopDistribute {
-private:
+ private:
   CSageCodeGen &mCodegen;
   CMarsIrV2 mMars_ir;
 
-public:
-  LoopDistribute(CSageCodeGen &codegen, void *pTopFunc, CInputOptions &option);
+ public:
+  LoopDistribute(CSageCodeGen *codegen, void *pTopFunc,
+                 const CInputOptions &option);
   bool run();
 
-private:
-  bool process_all_scopes(vector<void *> &top_loops);
+ private:
+  bool process_all_scopes(const vector<void *> &top_loops);
 
   bool lift_local_variable_out_of_loop();
 
   bool lift_local_variable_out_of_loop(void *loop);
 
-  bool distribute(vector<void *> &top_loops);
+  bool distribute(const vector<void *> &top_loops);
 };
 
 class LoopFlatten {
-private:
+ private:
   CSageCodeGen &mCodegen;
   CMarsIrV2 mMars_ir;
   CInputOptions &mOptions;
 
-public:
-  LoopFlatten(CSageCodeGen &codegen, void *pTopFunc, CInputOptions &option);
+ public:
+  LoopFlatten(CSageCodeGen *codegen, void *pTopFunc,
+              const CInputOptions &option);
   bool run();
 
-private:
-  bool flatten(vector<void *> &top_loops, set<void *> &unrolled_loops);
+ private:
+  bool flatten(const vector<void *> &top_loops,
+               const set<void *> &unrolled_loops);
 
-  int loop_flatten_nested_loops(void *sg_top_loop,
-                                set<void *> &not_touched_loops,
+  int loop_flatten_nested_loops(void *sg_loop,
+                                const set<void *> &not_touched_loops,
                                 bool no_final_reset);
 };
-#endif
+#endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_LOOP_DISTRIBUTE_H_
