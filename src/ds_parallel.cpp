@@ -36,7 +36,7 @@ void DsGenerator::BuildParallel(void *scope_stmt,
     // resource and design complexity consideratino.
     // We should use a better way to determine it.
     
-    vector<int> factors = {2};
+    vector<int> factors = {1,2};
     int limit = (tc < 7) ? tc : 7;
     factors.push_back(limit);
 

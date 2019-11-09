@@ -27,6 +27,7 @@ void DsGenerator::BuildTiling(void *scope_stmt,
     tc = (tc > MAX_TILE_SIZE) ? MAX_TILE_SIZE : tc;
 
     vector<int> options;
+    options.push_back(1);
     options.push_back(2);
     options.push_back(tc);
 
