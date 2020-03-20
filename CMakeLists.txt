@@ -189,6 +189,7 @@ target_link_libraries(ds_generator
   IdUpdate 
   KernelSeparate
   mars_rose
+  KernelSeparate
   mars_opt_utils
   legacy_ir 
   legacy_parsers
