@@ -35,18 +35,11 @@ void DsGenerator::BuildParallel(void *scope_stmt,
     // Note that we set the maximum parallel factor to 128 due to
     // resource and design complexity consideratino.
     // We should use a better way to determine it.
-    
-    vector<int> factors = {1,2};
-    int limit = (tc < 7) ? tc : 7;
-    factors.push_back(limit);
-
-    // enable below to use normal factor gen
-    /*
     vector<int> factors = GetAllDivisors(tc, 128);
     int limit = (tc < 128) ? tc : 128;
     for (int i = 2; i <= limit; i *= 2)
       factors.push_back(i);
-    */
+  
     sort(factors.begin(), factors.end());
     bool hasNonPowerOfTwo = false;
     vector<int> options;

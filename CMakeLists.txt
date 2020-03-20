@@ -185,10 +185,11 @@ set_target_properties(ds_generator PROPERTIES
     -DHAS_DS_SKELETON_EXTRACT -DHAS_LINE_BUFFER")
 
 target_link_libraries(ds_generator
-  mars_rose
-  mars_opt_utils
   Ir
   IdUpdate 
+  KernelSeparate
+  mars_rose
+  mars_opt_utils
   legacy_ir 
   legacy_parsers
   rose
@@ -200,17 +201,18 @@ target_link_libraries(ds_generator
 
 target_link_libraries(ds_generator_test
   gtest_main
-  mars_rose
-  mars_opt_utils
   Ir
   IdUpdate 
+  KernelSeparate
+  mars_rose
+  mars_opt_utils
   legacy_ir 
   legacy_parsers
   rose
-  ${Boost_LIBRARIES}
   ${JsonCPP_LIBRARIES}
   ${CMAKE_DL_LIBS} 
   ${CMAKE_THREAD_LIBS_INIT}
+  ${Boost_LIBRARIES}
 )
 
 enable_testing()
