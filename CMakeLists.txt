@@ -205,6 +205,7 @@ target_link_libraries(ds_generator_test
   IdUpdate 
   KernelSeparate
   mars_rose
+  KernelSeparate
   mars_opt_utils
   legacy_ir 
   legacy_parsers

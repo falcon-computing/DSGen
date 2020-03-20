@@ -270,7 +270,7 @@ class CSageCodeGen {
   void *TraceVariableInitializedName(
       void *sg_name);  //  trace up cross function calls
   std::string GetVariableTypeName(void *sg_var_);
-  std::string GetVariableName(void *sg_var_, bool qualified = false);
+  std::string GetVariableName(void *sg_var_, bool qualified = false) const;
   bool IsStatic(void *sg_decl_);
   bool IsMutable(void *sg_decl_);
   bool IsExtern(void *sg_decl_);
@@ -539,7 +539,7 @@ class CSageCodeGen {
 
   void *GetChildStmt(void *sg_scope_, size_t i);
   std::vector<void *> GetChildStmts(void *sg_scope_);
-  size_t GetChildStmtNum(void *sg_scope_);
+  size_t GetChildStmtNum(void *sg_scope_) const;
   // idx == numeric_limits<size_t>::max() for not found
   size_t GetChildStmtIdx(void *sg_scope_, void *sg_child_);
   void
