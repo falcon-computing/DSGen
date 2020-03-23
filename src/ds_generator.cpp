@@ -19,15 +19,80 @@
 
 #include "ds_generator.h"
 
+bool DsGenerator::CanonicalizeLoop() {
+  bool ret = false;
+  vector<CMirNode *> vec_nodes;
+  mars_ir_.get_topological_order_nodes(&vec_nodes);
+
+  for (int i = static_cast<int>(vec_nodes.size() - 1); i > 0; i--) {
+    CMirNode *node = vec_nodes[i];
+    if (node->is_function) {
+      continue;
+    }
+    void *loop_body = node->ref;
+    void *sg_loop = m_ast.GetParent(loop_body);
+    int ret1 = m_ast.CanonicalizeForLoop(&sg_loop, true);
+
+    ret |= ret1;
+  }
+  return ret;
+}
+
+bool DsGenerator::StandardizeLoop() {
+  vector<CMirNode *> vec_nodes;
+  mars_ir_.get_topological_order_nodes(&vec_nodes);
+  bool ret = false;
+
+  for (int i = static_cast<int>(vec_nodes.size() - 1); i > 0; i--) {
+    CMirNode *node = vec_nodes[i];
+    if (node->is_function) {
+      continue;
+    }
+    void *loop_body = node->ref;
+    void *sg_loop = m_ast.GetParent(loop_body);
+    ret |= m_ast.StandardizeForLoop(&sg_loop);
+  }
+  return ret;
+}
+
+void DsGenerator::CanonicalizeIR() {
+    map<void *, string> loop2file;
+    map<void *, string> loop2line;
+    clear_mars_ir();
+    build_mars_ir(false, false, true);
+
+    bool Changed = false;
+    Changed |= CanonicalizeLoop();
+
+    if (Changed) {
+      m_ast.reset_func_decl_cache();
+      m_ast.reset_func_call_cache();
+      m_ast.init_defuse_range_analysis();
+      clear_mars_ir();
+      build_mars_ir(false, false, true);
+    }
+
+    Changed |= StandardizeLoop();
+
+    if (Changed) {
+      m_ast.reset_func_decl_cache();
+      m_ast.reset_func_call_cache();
+      m_ast.init_defuse_range_analysis();
+    }
+}
+
 int DsGenerator::InitScopePragmas() {
+  CanonicalizeIR();
   vector<CMirNode *> fn_loop_nodes;
   mars_ir_.get_topological_order_nodes(&fn_loop_nodes);
   for (auto &node: fn_loop_nodes) {
     if (node->is_function) 
       continue;
     auto *loop_scope = m_ast.GetParent(node->ref); 
-    if (!IsOutermostForLoop(m_ast, loop_scope))
+    if (!IsLoopStatement(m_ast, loop_scope))
       continue;
+    // if (!IsOutermostForLoop(m_ast, loop_scope))
+    //   continue;
     
 
     string loop_id = "L"+ to_string(loop_index_++);

@@ -36,10 +36,6 @@ void bool2char_top(CSageCodeGen *codegen, void *pTopFunc,
 int check_non_static_pointer_interface_top(CSageCodeGen *codegen,
                                            void *pTopFunc,
                                            const CInputOptions &options);
-int DetectPointerCompareInterfaceTop(CSageCodeGen *codegen, void *pTopFunc,
-                                     const CInputOptions &options);
-int DetectPointerTypeCastInterfaceTop(CSageCodeGen *codegen, void *pTopFunc,
-                                      const CInputOptions &options);
 int DetectMultiDimPointerInterfaceTop(CSageCodeGen *codegen, void *pTopFunc,
                                       const CInputOptions &options);
 //  helper function

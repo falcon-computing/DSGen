@@ -2,6 +2,7 @@
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MARS_IR_V2_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MARS_IR_V2_H_
 #include <unordered_set>
+#include <unordered_map>
 #include <limits>
 #include <utility>
 #include <map>
@@ -64,7 +65,7 @@ class CMarsIrV2 {
                       //  to dimension, sg_init: the variable
   std::map<void *, bool>
       mBurstFlag;  //  true: infer burst; false: not infer burst
-  std::map<void *, bool>
+  std::map<std::pair<void *, void *>, bool>
       mWriteOnlyFlag;  //  true: do not infer read burst from host
                        //  even if the write is non-exact
   std::map<void *, bool> mCoalescingFlag;  //  true: not apply delinearization;
@@ -104,7 +105,7 @@ class CMarsIrV2 {
 
   bool get_burst_flag(void *sg_name);
 
-  bool get_write_only_flag(void *sg_name);
+  bool get_write_only_flag(void *sg_name, void *sg_scope);
 
   bool get_coalescing_flag(void *sg_name);
 
@@ -117,6 +118,7 @@ class CMarsIrV2 {
 
  public:
   bool any_trace_is_bus(void *target_arr, void *pos);
+  bool trace_to_bus_available(void *target_arr, void *pos);
 
  protected:
   bool every_trace_is_bus(void *target_arr, void *pos);
@@ -294,7 +296,9 @@ class CMarsIrV2 {
   bool is_used_by_kernel(void *sg_node);
 
  private:
+  bool is_used_by_kernel_sub(void *sg_node);
   bool m_valid_kernel_node_analysis;
+  std::unordered_map<void *, bool> m_used_by_kernel_cached;
   std::unordered_set<void *> m_var_used_by_kernel;
   std::unordered_set<void *> m_func_used_by_kernel;
   std::unordered_set<void *> m_type_used_by_kernel;

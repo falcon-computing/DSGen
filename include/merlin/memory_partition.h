@@ -41,6 +41,7 @@ class MemoryPartition {
   std::map<void *, int> cache_var_dim;
   std::map<void *, std::vector<size_t>> cache_var_size;
   std::map<void *, void *> cache_var_base_type;
+  bool OutOfBound;
 
   void dual_port_adjust();
 
@@ -111,7 +112,7 @@ bool factor_extract(CSageCodeGen *codegen, CMarsIr *mars_ir, void *sg_pragma,
 // User message
 void reportInvalidFactor(CSageCodeGen *codegen, CMirNode *node,
                          std::string str_factor);
-void reportInvalidFactor1(CSageCodeGen *codegen, CMirNode *node, int old_factor,
-                          int range);
+void reportLargeFactor(CSageCodeGen *codegen, CMirNode *node, int old_factor,
+                       int range);
 void reportSuboptimalFGPIP(CSageCodeGen *codegen, CMirNode *node, void *arr);
 void reportSuboptimalMemIntel(CSageCodeGen *codegen, void *arr_init);

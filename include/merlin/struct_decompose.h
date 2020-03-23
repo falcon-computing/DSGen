@@ -5,6 +5,7 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <unordered_set>
 #include <unordered_map>
 
 #include "cmdline_parser.h"
@@ -26,6 +27,12 @@ enum type_kind {
   SUPPORTED_COMPOUND_TYPE = 1,
   UNSUPPORTED_COMPOUND_TYPE = 2,
 };
+enum decomposed_info {
+  UNSUPPORTED_REPLACED_EXP = 0,
+  REPLACED_EXP = 1,
+  NO_REPLACED_EXP = 2,
+};
+
 class StructDecompose {
   CMarsIr mMarsIr;
   CMarsIrV2 mMarsIrV2;
@@ -41,10 +48,15 @@ class StructDecompose {
   std::string mTool_Type;
   std::set<std::string> mCheckedIdentifier;
   bool mCheckDimensionSize;
-  std::map<std::string, std::pair<void *, std::vector<size_t>>> mVar2ZeroDims;
+  std::map<std::string, std::tuple<void *, std::vector<size_t>, std::string>>
+      mVar2ZeroDims;
   std::map<std::string, int> mBuiltInFunc;
+  std::unordered_map<void *, bool> mUsedFields;
+  std::unordered_set<std::string> mUsedFieldNames;
+  std::unordered_map<std::string, std::string> m_global_token_map;
+  std::unordered_map<std::string, std::string> m_local_token_map;
 
-  std::set<void *> mUsedFields;
+  std::vector<void *> m_var_vec;
 
  public:
   StructDecompose(CSageCodeGen *codegen, void *pTopFunc,
@@ -73,8 +85,7 @@ class StructDecompose {
   }
 
   enum type_kind containsCompoundType(void *sg_type, std::string *type_info) {
-    void *base_type = m_ast->GetBaseType(sg_type);
-    base_type = m_ast->GetOrigTypeByTypedef(base_type, true);
+    void *base_type = m_ast->GetBaseType(sg_type, true);
     if (m_ast->IsScalarType(base_type) || cannotDecomposeType(base_type))
       return SCALAR_TYPE;
 #if 0
@@ -111,8 +122,7 @@ class StructDecompose {
   }
 
   int containsUnsupportedType(void *sg_type, std::string *type_info) {
-    void *base_type = m_ast->GetBaseType(sg_type);
-    base_type = m_ast->GetOrigTypeByTypedef(base_type, true);
+    void *base_type = m_ast->GetBaseType(sg_type, true);
     if (m_ast->IsEnumType(base_type) || m_ast->IsUnionType(base_type) ||
         m_ast->IsIntegerType(base_type) || m_ast->IsFloatType(base_type))
       return 0;
@@ -148,8 +158,7 @@ class StructDecompose {
   }
 
   bool cannotDecomposeType(void *sg_type) {
-    void *base_type = m_ast->GetBaseType(sg_type);
-    base_type = m_ast->GetOrigTypeByTypedef(base_type, true);
+    void *base_type = m_ast->GetBaseType(sg_type, true);
     if (m_ast->IsScalarType(base_type))
       return true;
     if (m_ast->IsRecursiveType(base_type))
@@ -183,21 +192,21 @@ class StructDecompose {
   void decomposePragma(void *var_init, void *scope);
 
   void replaceVariableRefs(void *var_init, void *scope);
+
+  void replaceVariableRefsLater(void *var_init);
   //  input: struct type
   //  output: a group of pair of name prefix and leaf node final type
   int decomposeType(
       void *sg_type,
       std::vector<std::tuple<std::string, void *, bool, bool>> *res, void *pos,
-      std::string *diagnosis_info, bool filter_unused_type,
-      void *sg_modifier_type = nullptr);
+      std::string *diagnosis_info, void *sg_modifier_type = nullptr);
 
   int decomposeType(
       void *sg_type,
-      std::vector<std::tuple<std::string, void *, bool, bool>> *res, void *pos,
-      bool filter_unused_fields) {
+      std::vector<std::tuple<std::string, void *, bool, bool>> *res,
+      void *pos) {
     std::string diagnosis_info;
-    return decomposeType(sg_type, res, pos, &diagnosis_info,
-                         filter_unused_fields);
+    return decomposeType(sg_type, res, pos, &diagnosis_info);
   }
 
   int canSafeDecompose(void *var_init, const std::vector<void *> &refs,
@@ -212,17 +221,24 @@ class StructDecompose {
 
   void *removeUnusedStructArguments(void *func_decl);
 
-  int decomposeExpression(void *leaf_exp, std::vector<void *> *vec_exp,
-                          bool filter_unused_fields);
+  decomposed_info decomposeExpression(void *leaf_exp,
+                                      std::vector<void *> *vec_exp);
 
-  int decomposeVariableRef(void *sg_var_ref, void **leaf_exp,
-                           std::vector<void *> *vec_new_exp,
-                           bool generate_new_expr, bool replace);
+  decomposed_info decomposeVariableRef(void *sg_var_ref, void **leaf_exp,
+                                       std::vector<void *> *vec_new_exp,
+                                       bool generate_new_expr, bool replace);
+  decomposed_info decomposeExpression(void *leaf_exp,
+                                      std::vector<void *> *vec_exp,
+                                      std::set<void *> *visited);
+
+  decomposed_info decomposeVariableRef(void *sg_var_ref, void **leaf_exp,
+                                       std::vector<void *> *vec_new_exp,
+                                       bool generate_new_expr, bool replace,
+                                       std::set<void *> *visited);
 
   int isKernelFunction(void *func_decl);
 
-  int get_leaf_expression_from_var_ref(void *var_ref, void **leaf_exp,
-                                       bool filter_unused_fields);
+  int get_leaf_expression_from_var_ref(void *var_ref, void **leaf_exp);
 #if 0
   void *createBuiltInAssignFunc(const std::string &func_name, void *struct_type,
                                 void *caller_decl, void *bindNode);
@@ -235,7 +251,8 @@ class StructDecompose {
 
   void replaceLocalVariableReference(void *new_body, void *orig_body);
 
-  int decomposeInitializer(void *orig_init, std::vector<void *> *vec_new_init) {
+  decomposed_info decomposeInitializer(void *orig_init,
+                                       std::vector<void *> *vec_new_init) {
     std::string diagnosis_info;
     return decomposeInitializer(orig_init, vec_new_init, false,
                                 &diagnosis_info);
@@ -246,9 +263,14 @@ class StructDecompose {
     return decomposeInitializer(orig_init, &vec_new_init, true, diagnosis_info);
   }
 
-  int decomposeInitializer(void *initializer,
-                           std::vector<void *> *new_initalizer, bool check,
-                           std::string *diagnosis_info);
+  decomposed_info decomposeInitializer(void *initializer,
+                                       std::vector<void *> *new_initalizer,
+                                       bool check, std::string *diagnosis_info);
+
+  decomposed_info decomposeInitializer(void *initializer,
+                                       std::vector<void *> *new_initalizer,
+                                       bool check, std::string *diagnosis_info,
+                                       std::set<void *> *visited);
 
   std::vector<size_t>
   get_array_dimension(std::string field_name, int *cont_flag, void *pos,
@@ -280,4 +302,10 @@ class StructDecompose {
   std::string get_qualified_member_name(void *var_init);
 
   void split_expression_with_side_effect(void *exp);
+
+  bool process_assign_exp(void *assign_exp, void *left_op, void *right_op,
+                          void *func);
+
+  void update_pragma_with_token_map(void *func);
+  void add_token_map(string arrow_mem_exp, string decomposed_name, bool global);
 };

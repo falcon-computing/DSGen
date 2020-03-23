@@ -14,12 +14,6 @@
 #define KEEP_UNUSED 0
 #define KEEP_UNREACHABLE 0
 
-static inline int64_t getUS() {
-  struct timeval tv;
-  gettimeofday(&tv, nullptr);
-  return ((int64_t)tv.tv_sec) * 1000000 + ((int64_t)tv.tv_usec);
-}
-
 #define getSEC(us) ((static_cast<float>(us)) / 1000000)
 
 class AccTime;
@@ -27,6 +21,12 @@ extern int64_t INIT_TIME;
 extern std::vector<AccTime *> accTimes;
 
 #if 0
+static inline int64_t getUS() {
+  struct timeval tv;
+  gettimeofday(&tv, nullptr);
+  return ((int64_t)tv.tv_sec) * 1000000 + ((int64_t)tv.tv_usec);
+}
+
 #define DEFINE_START_END int64_t start, end
 #define STEMP(x) x = getUS();
 #define TIMEP_BOUND(module, start, end, bound)                                 \

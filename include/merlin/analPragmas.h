@@ -46,6 +46,8 @@ class CAnalPragma {
   SgNode *location;
   pragma_tag opt_tag;
   std::string m_pragma_type;
+  std::string m_cmd;
+  std::string m_vendor;
   bool m_hls_fgopt;
 
  public:
@@ -53,8 +55,8 @@ class CAnalPragma {
       : m_ast(codegen), m_ref(nullptr), location(nullptr) {
     opt_clear();
   }
-  bool PragmasFrontendProcessing(void *decl, bool *errorOut,
-                                 bool check = false);
+  bool PragmasFrontendProcessing(void *decl, bool *errorOut, bool check = false,
+                                 bool vendor_pragma = false);
   void opt_clear();
   std::string get_task_name();
   bool is_hls_fg_opt() { return m_hls_fgopt; }
@@ -64,6 +66,8 @@ class CAnalPragma {
   void *update_pragma(void *decl, bool keep_old, void *scope);
   std::string print_attribute();
   std::string get_attribute(std::string attr);
+  std::string get_pragma_type() { return m_cmd; }
+  std::string get_vendor_type() { return m_vendor; }
   void remove_attribute(std::string attr);
   bool is_hls_pragma(std::string filter);
   void set_pragma_type(std::string pragma_type);
@@ -110,7 +114,7 @@ class CAnalPragma {
 
  protected:
   bool parse_pragma(void *decl, std::string *diagnosis_info,
-                    bool report = false);
+                    bool report = false, bool vendor_pragma = false);
   bool isPipelinePragma(SgPragmaDeclaration *decl);
   bool isLoopTilingPragma(SgPragmaDeclaration *decl);
   bool isPipe_ParallelPragma(SgPragmaDeclaration *decl);

@@ -193,9 +193,9 @@ class DsGenerator {
     loop_index_ = 0;
     fout.open("ds_info.json");
     is_fine_grain_ = options_.get_option("-fgrain") == "on";
-    cout << "=====\n";
-    cout << options_.get_option("-fgrain") << endl;
-    cout << "=====\n";
+    // cout << "=====\n";
+    // cout << options_.get_option("-fgrain") << endl;
+    // cout << "=====\n";
   }
   virtual ~DsGenerator() {
     for (auto item: map_scope_pragmas_) {
@@ -219,6 +219,19 @@ class DsGenerator {
  // public for unit testing purpose.
  // should be private when release.
  public:
+  inline void build_mars_ir(bool check_pragma, bool pragma_in_loop,
+                               bool build_node) {
+    //  build Mars IR
+    mars_ir_.clear();
+    mars_ir_.get_mars_ir(&m_ast, p_top_func_, build_node, false,
+                       pragma_in_loop);
+  }
+  inline void clear_mars_ir() {
+    mars_ir_.clear();
+  }
+  void CanonicalizeIR();
+  bool CanonicalizeLoop();
+  bool StandardizeLoop();
   void TraverseLoopDesignSpace(FnHandler fn, void *stmt, string loop_id); 
   bool UpdateUserSpecifiedPragma(void *scope_stmt, 
                                  PragmaType pragma_ty,

@@ -41,6 +41,8 @@ class CMarsIr {
   bool trace_to_bus(CSageCodeGen *codegen, void *kernel_decl, void *target_arr,
                     map<void *, bool> *res, void *pos);
 
+  bool trace_to_bus_available(CSageCodeGen *codegen, void *kernel_decl,
+                              void *target_arr, void *pos = nullptr);
   bool any_trace_is_bus(CSageCodeGen *codegen, void *kernel_decl,
                         void *target_arr, void *pos = nullptr);
   bool every_trace_is_bus(CSageCodeGen *codegen, void *kernel_decl,
@@ -67,7 +69,7 @@ class CMarsIr {
   }
 
   SgInitializedName *trace_to_the_bus(CSageCodeGen *codegen, void *pTopFunc,
-                                      SgFunctionDeclaration *curr_decl,
+                                      void *curr_decl,
                                       SgInitializedName *target_arr);
 
   void check_hls_partition(CSageCodeGen *codegen, void *pTopFunc);

@@ -21,18 +21,18 @@ bool partition_factor_anal(CSageCodeGen *codegen, CMarsIr *mars_ir,
                            void *arr_init, int opt, int *factor, int *repeated,
                            map<void *, set<int>> *adjust_factors,
                            bool *dual_option, bool has_partition,
-                           bool *self_assign);
+                           bool *self_assign, bool *OutOfBound);
 
 void unroll_ref_generate(CSageCodeGen *codegen, int opt, void *curr_loop,
                          void *curr_ref,
                          vector<map<void *, int>> *index_expr_full,
                          vector<map<void *, int>> *index_expr_copy,
-                         int dim_size, bool *heuristic_on);
+                         int dim_size, bool *heuristic_on, bool *is_exact);
 void unroll_ref_generate_full(
     CSageCodeGen *codegen, CMarsIr *mars_ir, int opt, void *curr_loop,
     map<void *, vector<map<void *, int>>> *index_expr_full,
     vector<map<void *, int>> *index_expr_copy, map<int, void *> *index_pos,
-    int dim_size, bool *heuristic_on);
+    int dim_size, bool *heuristic_on, bool *is_exact);
 
 void remove_repeated_ref(CSageCodeGen *codegen,
                          const vector<map<void *, int>> &index_expr,
@@ -43,6 +43,10 @@ bool conflict_detect_full(CSageCodeGen *codegen, int bank_proc,
                           vector<map<void *, int>> index_expr,
                           map<int, int> repeat_tag, map<int, void *> index_pos,
                           int mod_size = 1);
+bool check_invalid_access_bound(CSageCodeGen *codegen,
+                                vector<map<void *, int>> *index_expr,
+                                map<int, int> *repeat_tag, void *sg_loop,
+                                void *arr_init, int dim_size, int dim_val);
 
 void bank_renew(string prior, int *bank_proc);
 

@@ -48,4 +48,4 @@ int global_variable_conversion_checker(CSageCodeGen *codegen, void *pTopFunc,
 
 void collect_used_global_variable(void *scope, set<void *> *s_global,
                                   map<void *, set<void *>> *var2refs,
-                                  CSageCodeGen *ast);
+                                  CSageCodeGen *ast, bool *errorOut);

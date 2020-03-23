@@ -64,8 +64,6 @@ class MemoryCoalescingIntel {
 
   bool checkInvalidBitWidth(int opt_bitwidth, int orig_bitwidth);
 
-  bool check_declaration(void *func_decl, std::string var_name);
-
   int memcpy_replace(const MemcpyInfo &info, void *func_call);
 
   int handle_single_assignment(void *sg_array1,

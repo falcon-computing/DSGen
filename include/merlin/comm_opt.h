@@ -119,5 +119,8 @@ bool check_dead_node(CMarsNode *);
 
 bool check_node(CMarsNode *node, map<void *, mark_struct> *loop2mark,
                 CMarsIrV2 *mars_ir, bool pre_check = false);
+// coarse_pipeline_altera
+void assign_schedule_for_marsIR_nodes(CMarsIrV2 *mars_ir,
+                                      bool detect_shared_memory = false);
 }  //  namespace MarsCommOpt
 #endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_COMM_OPT_H_

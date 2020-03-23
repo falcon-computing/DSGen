@@ -9,5 +9,5 @@ int loop_tiling_top(CSageCodeGen *codegen, void *pTopFunc,
 
 void collect_tripcount_pragma(CSageCodeGen *codegen, CMarsIr *mars_ir,
                               void *scope, void **sg_bound_pragma,
-                              int *orig_factor);
+                              int64_t *trip_count);
 #endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_LOOP_TILING_H_

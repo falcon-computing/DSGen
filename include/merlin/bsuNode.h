@@ -42,11 +42,7 @@ class CMirNode {
   bool is_affine;     //  FIXME: specify whether the iteration domain is affine,
                       //  not implemented yet
   bool is_curr_affine;  //  Current loop level is affine or not
-  string iterator_string;
-  string iterator_range_string;
   string order_vec_string;
-  //  access_table_list access_table;
-  //  access_table_list full_access_table;
   array_table_list full_array_list;
   map<void *, vector<void *>> full_access_table_v2;
 
@@ -67,10 +63,10 @@ class CMirNode {
   bool has_loop_without_pragma;
   int arraycount;
   int iterators_num;
-  vector<void *> loops;
+  vector<void *> loops_outside;
   string funcname_str;
   string funcname_without_args;
-  symbol_table_map
+  vector<void *>
       iterator_table;  //  stores all names of loop iterator variables
   range_table_map range_lower_table;  //  the lower range of the iterators
   range_table_map range_upper_table;  //  the upper range of the iterators
@@ -108,13 +104,10 @@ class CMirNode {
   bool order_vector_gen(CSageCodeGen *codegen, void *sg_node_scope,
                         void *sg_node);
   bool analyze_iteration_domain_order(CSageCodeGen *codegen, void *sg_scope_,
-                                      void *sg_stmt_, vector<string> *iterators,
-                                      vector<int> *loop_indices,
+                                      void *sg_stmt_, vector<void *> *iterators,
                                       vector<SgExpression *> *lower,
                                       vector<SgExpression *> *upper,
                                       vector<int> *ub_limit_vec);
-  bool get_child_task_idx(CSageCodeGen *codegen, void *sg_scope_,
-                          void *sg_child_, size_t *index);
   bool isAffineRange();
   //    bool parse_full_accesses(CSageCodeGen *codegen, int dim, void* arr_init,
   //                vector<map<void*, int>> &index_expr_full, int &mod_size);

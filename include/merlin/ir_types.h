@@ -5,8 +5,6 @@
 #include <vector>
 
 typedef std::map<int, int> index_expr_map;  //  FIXME:  (variable, coefficient)
-typedef std::map<int, std::string>
-    symbol_table_map;  //  FIXME: Table of iterative variables
 typedef std::map<int, int>
     range_table_map;  //  FIXME: Table of iteration space, correct only when the
                       //  itartion domain is affine
@@ -63,6 +61,7 @@ static const char CMOST_type_low[] = "type";
 static const char CMOST_data_type[] = "DATA_TYPE";
 static const char CMOST_depth[] = "DEPTH";
 static const char CMOST_max_depth[] = "MAX_DEPTH";
+static const char CMOST_bank[] = "BANK";
 static const char CMOST_exclusive_option[] = "EXCLUSIVE_OPTION";
 static const char CMOST_exclusive[] = "EXCLUSIVE";
 static const char CMOST_fifo[] = "FIFO";
@@ -85,11 +84,16 @@ static const char CMOST_SPAWN[] = "SPAWN";
 static const char CMOST_SPAWN_KERNEL[] = "SPAWN_KERNEL";
 static const char CMOST_continue[] = "CONTINUE";
 static const char CMOST_auto[] = "AUTO";
+static const char AP_PRAGMA[] = "AP";  // previous vivado pragma
+static const char CMOST_ARR_PARTITION[] = "ARRAY_PARTITION";
+static const char CMOST_ARR_PARTITION_low[] = "array_partition";
 static const char HLS_PRAGMA[] = "HLS";  // vivado pragma
-static const char AP_PRAGMA[] = "AP";    // previous vivado pragma
-static const char CMOST_PARTITION[] = "ARRAY_PARTITION";
-static const char CMOST_PARTITION_low[] = "array_partition";
+static const char HLS_ARR_PARTITION[] = "ARRAY_PARTITION";
+static const char HLS_ARRAY[] = "ARRAY";
+static const char HLS_PARTITION[] = "PARTITION";
 static const char HLS_TRIPCOUNT[] = "LOOP_TRIPCOUNT";
+static const char HLS_LOOP[] = "LOOP";
+static const char HLS_TC[] = "TRIPCOUNT";
 static const char HLS_MAX[] = "max";
 static const char HLS_MIN[] = "min";
 static const char HLS_PIPELINE[] = "PIPELINE";

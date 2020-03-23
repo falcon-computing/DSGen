@@ -285,6 +285,9 @@ class CMarsExpression {
                                    const CMarsExpression &op2);
   friend CMarsExpression operator/(const CMarsExpression &op1, int64_t op2);
 
+  friend CMarsExpression operator%(const CMarsExpression &op1,
+                                   const CMarsExpression &op2);
+  friend CMarsExpression operator%(const CMarsExpression &op1, int64_t op2);
   friend CMarsExpression operator<<(const CMarsExpression &op1,
                                     const CMarsExpression &op2);
   friend CMarsExpression operator>>(const CMarsExpression &op1,

@@ -20,6 +20,7 @@ int main(int argc, char* argv[]) {
 
   int ret;
   // No matter C or Cl files, we will change the file name to c file
+  CSageCodeGen m_ast;
   vector<string> vec_src_list;
   for (int i = 1; i < options.get_option_num(""); i++) {
     string s_file = options.get_option("", i);
@@ -27,10 +28,10 @@ int main(int argc, char* argv[]) {
     vec_src_list.push_back(s_file);
   }
 
-  CSageCodeGen m_ast;
   void *sg_project = m_ast.OpenSourceFile(vec_src_list);
   if (sg_project == NULL)
     throw std::exception();
+  m_ast.InitBuiltinTypes();
   void * p_top_func = sg_project;
   ds_generator_top(m_ast, p_top_func, options);
   m_ast.remove_double_brace();

@@ -101,8 +101,6 @@ class MemoryCoalescingXilinx {
 
   void *createBuffer(void *base_type, void *sg_scope, void *func_decl);
 
-  bool check_declaration(void *func_decl, std::string var_name);
-
   void detect_access_in_paralleled_loop(void *ref, ArgumentInfo *info);
 
   void auto_cache_for_coalescing();

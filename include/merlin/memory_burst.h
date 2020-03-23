@@ -135,8 +135,6 @@ class MemoryBurst {
                     int buffer_count, int element_size);
   void insert_flatten(CMirNode *bNode, string tag_str);
 
-  bool check_declaration(void *kernel_decl, string arr_name);
-
   void add_header(void *pos);
 
   bool is_partial_access(void *ref, void *loop);
@@ -187,7 +185,8 @@ class MemoryBurst {
                      int element_bytes);
 
   void cg_reportMessage(void *array, void *scope, int64_t buffer_size,
-                        int element_bytes, string kind);
+                        int element_bytes, string kind,
+                        bool aggressive_write_only = false);
 
   void reportPossibleNegativeAccessStart(
       const MarsProgramAnalysis::CMarsExpression &me_start, void *sg_array,
@@ -212,7 +211,8 @@ class MemoryBurst {
       const MarsProgramAnalysis::CMarsExpression &me_write_length,
       bool is_non_negative_write_len, int read_write, void **buf_decl,
       void **memcpy_r, void **memcpy_w, int64_t *buffer_size,
-      bool check_constant_burst_len, bool report, int element_size);
+      bool check_constant_burst_len, bool report, int element_size,
+      bool *aggressive_write_only);
   int cg_transform_refs_in_scope(void *sg_array, void *offset, void *insert_pos,
                                  void *sg_array_replace, void *scope,
                                  int check_only,
@@ -267,7 +267,7 @@ class MemoryBurst {
 
   void update_mars_ir(void *port, void *scope);
 
-  void cg_transform_burst_for_parallel(
+  bool cg_transform_burst_for_parallel(
       void *sg_loop, void *sg_array,
       const MarsProgramAnalysis::CMarsExpression &me_start,
       const MarsProgramAnalysis::CMarsExpression &me_length,
@@ -283,7 +283,7 @@ class MemoryBurst {
 
   int cg_get_access_size(void *array, void *scope);
 
-  void cg_transform_burst_for_data_reuse(
+  bool cg_transform_burst_for_data_reuse(
       void *sg_scope, void *sg_array,
       const MarsProgramAnalysis::CMarsExpression &me_start,
       const MarsProgramAnalysis::CMarsExpression &me_length,

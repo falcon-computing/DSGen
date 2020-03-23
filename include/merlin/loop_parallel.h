@@ -27,6 +27,8 @@ class LoopParallel {
   bool mLoopFlatten;
   bool mAutoPartition;
 
+  set<void *> warned_loops;
+
  public:
   LoopParallel(CSageCodeGen *codegen, void *pTopFunc,
                const CInputOptions &options)
@@ -39,13 +41,17 @@ class LoopParallel {
   void init();
   bool run();
   bool preprocess();
+  void check_out_of_bound_access();
   void remove_loop_pragmas();
   void removePragmaStatement(CMirNode *new_node);
 
   // Xilinx flow
   int loop_parallel_xilinx_top();
-  void parse_pragma_xilinx(map<CMirNode *, bool> node_actions);
-  void insert_pipeline(CMirNode *bNode, bool action);
+  void
+  parse_pragma_xilinx(map<CMirNode *, bool> node_actions,
+                      std::map<void *, std::map<int, int>> array_partitions);
+  void insert_pipeline(CMirNode *bNode, bool action,
+                       std::map<void *, std::map<int, int>> array_partitions);
   void insert_unroll(CMirNode *bNode);
 
   // Intel flow
@@ -60,13 +66,14 @@ bool check_legal_complete_unroll(CSageCodeGen *codegen, void *sg_loop,
 int dependency_resolve_top(CSageCodeGen *ast, void *pTopFunc,
                            const CInputOptions &options);
 void *test_false_dependency(CSageCodeGen *codegen, void *sg_loop,
-                            void *sg_array);
+                            void *sg_array, int *has_write);
 void check_false_dependency_xilinx(CSageCodeGen *codegen, void *sg_pragma,
                                    void *target_var);
 void check_false_dependency_xilinx(CSageCodeGen *codegen, void *pTopFunc,
                                    const CInputOptions &options);
-void check_dependency_msg(CSageCodeGen *codegen, CMirNode *bNode,
-                          string *msg_dep);
+void check_dependency_msg(
+    CSageCodeGen *codegen, CMirNode *bNode, string *msg_dep,
+    std::map<void *, std::map<int, int>> array_partitions);
 void check_false_dependency_intel(CSageCodeGen *codegen, void *pTopFunc,
                                   const CInputOptions &options);
 bool check_false_dependency_intel(CSageCodeGen *codegen, void *sg_pragma,
