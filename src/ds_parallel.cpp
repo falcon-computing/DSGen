@@ -29,16 +29,21 @@ void DsGenerator::BuildParallel(void *scope_stmt,
     if (tc <= 1) {
       cout << "skip due to abnormal loop tripcount" << endl;
       return;
+    } else if (tc <= 32) {
+      cout << "leave this parallel to auto parallel" << endl;
+      return;
     }
   
     // Candidate parallel factors are divisors and power-of-two numbers.
-    // Note that we set the maximum parallel factor to 128 due to
+    // Note that we set the maximum parallel factor to 32 due to
     // resource and design complexity consideratino.
     // We should use a better way to determine it.
-    vector<int> factors = GetAllDivisors(tc, 128);
-    int limit = (tc < 128) ? tc : 128;
+    vector<int> factors = GetAllDivisors(tc, 32);
+    int limit = (tc < 32 ? tc : 32);
     for (int i = 2; i <= limit; i *= 2)
       factors.push_back(i);
+    if (factors.back() != tc)
+      factors.push_back(tc);
   
     sort(factors.begin(), factors.end());
     bool hasNonPowerOfTwo = false;
