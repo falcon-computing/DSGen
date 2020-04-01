@@ -56,8 +56,6 @@ bool DsGenerator::StandardizeLoop() {
 }
 
 void DsGenerator::CanonicalizeIR() {
-    map<void *, string> loop2file;
-    map<void *, string> loop2line;
     clear_mars_ir();
     build_mars_ir(false, false, true);
 
@@ -93,7 +91,7 @@ int DsGenerator::InitScopePragmas() {
       continue;
     // if (!IsOutermostForLoop(m_ast, loop_scope))
     //   continue;
-    
+    m_ast.add_missing_brace(loop_scope); 
 
     string loop_id = "L"+ to_string(loop_index_++);
     //TODO (Min) As a showcase we disable these functions
