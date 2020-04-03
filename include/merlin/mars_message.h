@@ -232,13 +232,9 @@
   PROCS_ERROR(66, "Pointer cast " + (x) + " is not supported")
 #define PROCS_ERROR_68(x)                                                      \
   PROCS_ERROR(68, "More than one task pragma is not supported")
-#define PROCS_ERROR_73(x)                                                      \
-  PROCS_ERROR(73, "Pointer comparison detected " + (x) + ".")
 #define PROCS_ERROR_74(x)                                                      \
   PROCS_ERROR(74,                                                              \
               "Found a variable with multi-dimensional pointer " + (x) + ".")
-#define PROCS_ERROR_78(x)                                                      \
-  PROCS_ERROR(78, "Found pointer type casting " + (x) + ".")
 #define PROCS_ERROR_79(x)                                                      \
   PROCS_ERROR(79, "Do not support array of pointers for char type variable " + \
                       (x))
@@ -392,12 +388,14 @@
 #define SYNCHK_ERROR_33(x)                                                     \
   SYNCHK_ERROR(33, "Standard library function " + (x) + " is not supported. ")
 #define SYNCHK_ERROR_34(x)                                                     \
-  SYNCHK_ERROR(34, "Function call " + (x) + " has no function definition. " +  \
-                       "Please either remove it or provide a synthesizable " + \
-                       "implementation.")
+  SYNCHK_ERROR(34, "Function " + (x) + " has no definition. ")
 #define SYNCHK_ERROR_35(x)                                                     \
   SYNCHK_ERROR(35, "Static kernel function " + (x) + " is not supported.\n" +  \
                    "Please remove static modifier.")
+#define SYNCHK_ERROR_36(x)                                                     \
+  SYNCHK_ERROR(36, "Pointer comparison detected " + (x) + ".")
+#define SYNCHK_ERROR_37(x)                                                     \
+  SYNCHK_ERROR(37, "Found pointer casting " + (x) + ".")
 
 #define BURST_ERROR_1                                                          \
   BURST_ERROR(1, "Cannot pass function uniquifying checker\n"                  \

@@ -19,6 +19,9 @@
 
 #include "ds_generator.h"
 
+int lower_separate_top(CSageCodeGen * codegen, void *pTopFunc,
+                         const CInputOptions &options);
+
 bool DsGenerator::CanonicalizeLoop() {
   bool ret = false;
   vector<CMirNode *> vec_nodes;
@@ -408,6 +411,7 @@ int ds_generator_top(CSageCodeGen &m_ast, void *pTopFunc,
   cout << "--=# Design Space Generator Start#=--\n";
   cout << "=====================================================" << endl;
 
+  lower_separate_top(&m_ast, pTopFunc, options);
   DsGenerator dg(m_ast, pTopFunc, options);
   dg.InitScopePragmas();
   dg.InsertCreatedPragmasAndOutputJson();

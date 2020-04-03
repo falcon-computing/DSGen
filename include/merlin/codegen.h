@@ -1428,7 +1428,8 @@ class CSageCodeGen {
   int add_label_scope(void *sg_loop);
   bool replace_sizeof(void *scope);
   void clean_empty_aggregate_initializer(void *sg_scope);
-  void clean_implict_conversion_operator(void *sg_scope);
+  bool clean_implict_conversion_operator(void *sg_scope);
+  void recover_hls_namespace_prefix(void *scope);
   void function_outline(void *node_stmt, void **func_call, void **func_decl,
                         const std::string &func_name_prefix,
                         bool add_number_suffix, bool remove_dead_code,

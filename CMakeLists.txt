@@ -188,8 +188,10 @@ target_link_libraries(ds_generator
   Ir
   IdUpdate 
   KernelSeparate
+  InputChecker
+  LowerCpp
+  LowerSeparate
   mars_rose
-  KernelSeparate
   mars_opt_utils
   legacy_ir 
   legacy_parsers
@@ -205,8 +207,10 @@ target_link_libraries(ds_generator_test
   Ir
   IdUpdate 
   KernelSeparate
+  InputChecker
+  LowerCpp
+  LowerSeparate
   mars_rose
-  KernelSeparate
   mars_opt_utils
   legacy_ir 
   legacy_parsers

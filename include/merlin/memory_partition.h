@@ -108,7 +108,7 @@ bool check_action(int f1, int f2);
 void print_partition(CSageCodeGen *codegen,
                      const std::map<void *, std::map<int, int>> &partitions);
 bool factor_extract(CSageCodeGen *codegen, CMarsIr *mars_ir, void *sg_pragma,
-                    map<int, int> *hls_factors);
+                    map<int, int> *hls_factors, void *arr_init);
 // User message
 void reportInvalidFactor(CSageCodeGen *codegen, CMirNode *node,
                          std::string str_factor);

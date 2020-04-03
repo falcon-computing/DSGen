@@ -308,4 +308,6 @@ class StructDecompose {
 
   void update_pragma_with_token_map(void *func);
   void add_token_map(string arrow_mem_exp, string decomposed_name, bool global);
+  int get_dim_offset(string field_name, void *pos);
+  int get_dim_size(string field_name, void *pos);
 };

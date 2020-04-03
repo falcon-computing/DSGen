@@ -71,9 +71,11 @@ void check_false_dependency_xilinx(CSageCodeGen *codegen, void *sg_pragma,
                                    void *target_var);
 void check_false_dependency_xilinx(CSageCodeGen *codegen, void *pTopFunc,
                                    const CInputOptions &options);
-void check_dependency_msg(
-    CSageCodeGen *codegen, CMirNode *bNode, string *msg_dep,
-    std::map<void *, std::map<int, int>> array_partitions);
+void check_dependency_msg(CSageCodeGen *codegen, CMarsIr *mars_ir,
+                          CMirNode *bNode,
+                          string *msg_dep,
+                          std::map<void *, std::map<int, int>>
+                          array_partitions);
 void check_false_dependency_intel(CSageCodeGen *codegen, void *pTopFunc,
                                   const CInputOptions &options);
 bool check_false_dependency_intel(CSageCodeGen *codegen, void *sg_pragma,

@@ -36,8 +36,9 @@
 //
 //#include "mars_opt.h"
 //#include "PolyModel.h"
-//#include "tldm_annotate.h"
+//#include "tldm_annotate.h""
 #include "codegen.h"
+#include "input_checker.h"
 //#include "program_analysis.h"
 //
 #include "mars_ir.h"
