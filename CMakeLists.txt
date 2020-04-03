@@ -191,6 +191,7 @@ target_link_libraries(ds_generator
   InputChecker
   LowerCpp
   LowerSeparate
+  SimpleDCE
   mars_rose
   mars_opt_utils
   legacy_ir 
@@ -210,6 +211,7 @@ target_link_libraries(ds_generator_test
   InputChecker
   LowerCpp
   LowerSeparate
+  SimpleDCE
   mars_rose
   mars_opt_utils
   legacy_ir 
