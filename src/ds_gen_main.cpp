@@ -94,8 +94,11 @@ int main(int argc, char* argv[]) {
   string kernel_file;
   while(getline(iss, kernel_file)) {
    vec_kernel_files.push_back(kernel_file);
+   string rm_extern_cmd = "sed -i \"/^extern int __merlin_include__GB/d\" "
+                         + kernel_file; 
+   system(rm_extern_cmd.c_str());
   }
-    
+  
   for (auto &kernel_file: vec_kernel_files) {
     string noprefix_kernel_file = kernel_file.substr(4); // ./__merlinxxxx
     string rename_cmd =
@@ -103,19 +106,18 @@ int main(int argc, char* argv[]) {
     cout << rename_cmd<< "\n";
     system(rename_cmd.c_str());
     vec_src_list.push_back(noprefix_kernel_file); 
-
-    void *sg_project = m_ast.OpenSourceFile(vec_src_list);
-    if (sg_project == NULL)
-      throw std::exception();
-    vec_src_list.pop_back(); 
-    m_ast.InitBuiltinTypes();
-    void * p_top_func = sg_project;
-    ds_generator_top(m_ast, p_top_func, options);
-    m_ast.remove_double_brace();
-    m_ast.GenerateCode();
-    string rm_extern_cmd = "sed -i \"/^extern int __merlin_include__GB/d\" rose_"
-                           + noprefix_kernel_file; 
-    system(rm_extern_cmd.c_str());
   }
+    
+  void *sg_project = m_ast.OpenSourceFile(vec_src_list);
+  if (sg_project == NULL)
+    throw std::exception();
+
+  // for (auto &kernel_file: vec_kernel_files) {
+  m_ast.InitBuiltinTypes();
+  void * p_top_func = sg_project;
+  ds_generator_top(m_ast, p_top_func, options);
+  m_ast.remove_double_brace();
+  m_ast.GenerateCode();
+  // }
   return 0;
 }

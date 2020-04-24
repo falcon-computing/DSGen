@@ -30,17 +30,8 @@
 #include <json/json.h> 
 #include <boost/any.hpp>
 
-//#include "xml_parser.h"
-//#include "cmdline_parser.h"
-//#include "file_parser.h"
-//
-//#include "mars_opt.h"
-//#include "PolyModel.h"
-//#include "tldm_annotate.h""
 #include "codegen.h"
 #include "input_checker.h"
-//#include "program_analysis.h"
-//
 #include "mars_ir.h"
 #include "mars_ir_v2.h"
 #include "dse_utils.h"
