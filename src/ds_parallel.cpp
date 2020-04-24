@@ -17,19 +17,32 @@ void DsGenerator::BuildParallel(void *scope_stmt,
     // Build a design space by analyzing loop tripcount
     int64_t tc = 0;
     if (!m_ast.IsForStatement(scope_stmt)) {
+      cout << m_ast._up(scope_stmt) << " : ";
       cout << "skip non for-loop" << endl;
       return;
-    } else if (!m_ast.get_loop_trip_count(scope_stmt, &tc)) {
+    }
+    
+    int64_t trip_count = INT_MAX, trip_count_pragma = INT_MAX,
+            trip_count_ub = INT_MAX; 
+    if (!m_ast.get_loop_trip_count(scope_stmt,
+                                   &trip_count, &trip_count_ub) &&
+        !m_ast.get_loop_trip_count_from_pragma(scope_stmt,
+                                               &trip_count_pragma)) {
+      cout << m_ast._up(scope_stmt) << " : ";
       cout << "skip due to fail to analyze loop tripcount" << endl;
       return;
     }
-  
+
+    tc = min(trip_count, min(trip_count_pragma, trip_count_ub));    
+ 
     cout << "tripcount " << tc << ", ";
   
     if (tc <= 1) {
+      cout << m_ast._up(scope_stmt) << " : ";
       cout << "skip due to abnormal loop tripcount" << endl;
       return;
     } else if (tc <= 32) {
+      cout << m_ast._up(scope_stmt) << " : ";
       cout << "leave this parallel to auto parallel" << endl;
       return;
     }
