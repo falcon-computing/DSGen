@@ -25,10 +25,9 @@ bool build_reduction_general(CSageCodeGen *codegen,
                              const std::map<void *, int> &loop_is_related,
                              const std::vector<void *> &loop_nest);
 
-bool anal_reduction(CSageCodeGen *codegen, CMarsIr *mars_ir,
-                    CMirNode *bNode, void *arr_pntr_ref,
-                    void *curr_op, void *target_var, string scheme_str,
-                    int *scheme_1_enabled, int *lift_level,
+bool anal_reduction(CSageCodeGen *codegen, CMarsIr *mars_ir, CMirNode *bNode,
+                    void *arr_pntr_ref, void *curr_op, void *target_var,
+                    string scheme_str, int *scheme_1_enabled, int *lift_level,
                     std::vector<void *> *vec_reduct_loops,
                     std::vector<void *> *vec_parallel_loops,
                     std::map<void *, int> *loop_is_related,

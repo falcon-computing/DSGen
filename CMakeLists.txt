@@ -14,6 +14,8 @@ endif()
 endmacro(LoadEnv)
 
 LoadEnv("LLVM_ROOT_DIR"       "LLVM")
+LoadEnv("GCC_ROOT"            "GCC")
+LoadEnv("BOOST_ROOT"          "BOOST")
 LoadEnv("CLANG_ROOT_DIR"      "Clang")
 LoadEnv("ROSE_ROOT_DIR"       "ROSE")
 LoadEnv("RAPIDJSON_ROOT_DIR"  "RapidJSON")
@@ -25,17 +27,12 @@ set(CMAKE_CXX_COMPILER "${LLVM_ROOT_DIR}/bin/clang++")
 project(DsGenerator)
 
 # For FindLLVM and FindBoost
-find_package(Boost 1.53 REQUIRED
+find_package(Boost 1.67 REQUIRED
               COMPONENTS regex filesystem thread system)
 find_package(Threads)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/Modules")
 find_package(LLVM REQUIRED)
-
-# For FindJSONCPP
-find_package(JsonCPP REQUIRED)
-include_directories(${JsonCPP_INCLUDE_DIRS})
-link_directories(${JsonCPP_LIBRARY_DIRS})
 
 # Google Test
 configure_file(${CMAKE_MODULE_PATH}/FindGoogleTest.cmake googletest-download/CMakeLists.txt)
@@ -107,6 +104,7 @@ message(STATUS "build version date: ${BUILD_DATE}")
 set(CMAKE_CXX_FLAGS "-Wall -Wno-c++17-extensions")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_VERSION=\"\\\"${BUILD_VERSION}\"\\\"")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_DATE=\"\\\"${BUILD_DATE}\"\\\"")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --gcc-toolchain=${GCC_ROOT}")
 
 set(CMAKE_CXX_FLAGS_DEBUG "-DPROJDEBUG=1 -std=c++14 -O0 -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "-DPROJDEBUG=1 -std=c++14 -O3")
@@ -127,16 +125,15 @@ include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/merlin"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/merlin/legacy/ir"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/merlin/legacy/parsers"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/jsoncpp/"
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${ROSE_ROOT_DIR}/include/rose"
-    "${JsonCPP_INCLUDE_DIRS}"
     "${RAPIDJSON_ROOT_DIR}"
 )
 
 link_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}/lib"
     "${ROSE_ROOT_DIR}/lib"
-    "${JsonCPP_LIBRARY_DIRS}"
     "${Boost_LIBRARY_DIRS}"
 )
 
@@ -149,7 +146,7 @@ add_executable(ds_generator
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_bitwidth_opt.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/dse_utils.cpp"
 )
-add_dependencies(ds_generator JsonCPP)
+#add_dependencies(ds_generator JsonCPP)
 
 add_executable(ds_generator_test
     "${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test.cpp"
@@ -160,7 +157,7 @@ add_executable(ds_generator_test
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_bitwidth_opt.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/dse_utils.cpp"
 )
-add_dependencies(ds_generator_test JsonCPP)
+#add_dependencies(ds_generator_test JsonCPP)
 
 set_target_properties(ds_generator PROPERTIES
     LINKER_LANGUAGE CXX

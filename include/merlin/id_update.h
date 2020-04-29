@@ -9,7 +9,7 @@ struct UCodeInfo {
   const string name;
   const string file_location;
   explicit UCodeInfo(const string &na = "", const string &loc = "")
-    : name(na), file_location(loc) {}
+      : name(na), file_location(loc) {}
 };
 
 std::vector<std::map<std::string, HistoryMarker>>

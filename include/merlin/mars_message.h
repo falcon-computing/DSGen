@@ -309,8 +309,11 @@
 #define SYNCHK_ERROR_11(x)                                                     \
   SYNCHK_ERROR(11, "Found a class member function " + (x))
 #define SYNCHK_ERROR_12(x)                                                     \
-  SYNCHK_ERROR(                                                                \
-      12, "Reference type at the kernel interface is not supported:\n " + (x))
+  SYNCHK_ERROR(12,                                                             \
+               "Reference type at the kernel interface is not supported:\n " + \
+                   (x) +                                                       \
+                   "\n  Please try pure kernel flow with \'--attribute "       \
+                   "pure_kernel=on\'")
 #define SYNCHK_ERROR_13(x) SYNCHK_ERROR(13, (x))
 //  PROCS_ERROR(53, "The kernel interface port is not supported: " + (x))
 #define SYNCHK_ERROR_14(x, y, z)                                               \
@@ -391,11 +394,15 @@
   SYNCHK_ERROR(34, "Function " + (x) + " has no definition. ")
 #define SYNCHK_ERROR_35(x)                                                     \
   SYNCHK_ERROR(35, "Static kernel function " + (x) + " is not supported.\n" +  \
-                   "Please remove static modifier.")
+                       "Please remove static modifier.")
 #define SYNCHK_ERROR_36(x)                                                     \
   SYNCHK_ERROR(36, "Pointer comparison detected " + (x) + ".")
 #define SYNCHK_ERROR_37(x)                                                     \
   SYNCHK_ERROR(37, "Found pointer casting " + (x) + ".")
+#define SYNCHK_ERROR_38(x)                                                     \
+  SYNCHK_ERROR(38, "hls::stream<> used as non-reference or in non-pure "       \
+                   "kernel flow is not supported:\n" +                         \
+                       (x))
 
 #define BURST_ERROR_1                                                          \
   BURST_ERROR(1, "Cannot pass function uniquifying checker\n"                  \
@@ -730,7 +737,7 @@
              "  Hint:   set accurate bound for variables using 'assert'")
 #define BURST_WARNING_5(x, z, y, c)                                            \
   BURST_WARNING(                                                               \
-      5, "Memory burst NOT inferred : variable " + (x) + "in scope " + (z) +   \
+      5, "Memory burst NOT inferred : variable " + (x) + " in scope " + (z) +  \
              " with big on-chip \n"                                            \
              "  buffer.\n" +                                                   \
              "  Reason: required burst buffer is too large (" + (y) +          \
@@ -862,11 +869,11 @@
                        "unsupported reduction operation '" + (z) + "'")
 #define REDUC_WARNING_10(x)                                                    \
   REDUC_WARNING(10, "Ignoring reduction in loop " + (x) +                      \
-                       " as it is fully parallelized")
+                        " as it is fully parallelized")
 #define REDUC_WARNING_11(x, y)                                                 \
   REDUC_WARNING(11, "Ignoring reduction request on variable '" + (x) +         \
-                   "' in loop " + (y) +      \
-                       ": the variable is declared in the loop scope\n")
+                        "' in loop " + (y) +                                   \
+                        ": the variable is declared in the loop scope\n")
 
 #define LINEBUF_INFO_1(x, y)                                                   \
   LINEBUF_INFO(1, "Applying line buffer on variable '" + (x) + "' in loop " +  \

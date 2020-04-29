@@ -2271,8 +2271,9 @@ class CSageCodeGen {
                                             // total_size);
 
   //  vendor library analysis
-  int IsXilinxAPIntType(void *type) const;
-  int IsXilinxAPFixedType(void *type) const;
+  bool IsXilinxStreamType(void *type) const;
+  bool IsXilinxAPIntType(void *type) const;
+  bool IsXilinxAPFixedType(void *type) const;
   bool IsXilinxIntrinsic(void *fn_decl) const;
   bool isCanonicalForLoop(void *loop, void **ivar = nullptr,
                           void **lb = nullptr, void **ub = nullptr,
@@ -2352,7 +2353,7 @@ class CSageCodeGen {
   // TODO(youxiang): This should return an unsigned.
   int get_bitwidth_from_type_str(const std::string &str_type,
                                  bool report = true);
-
+  int get_sizeof_arbitrary_precision_integer(int bitwidth) const;
   bool isMultiAssignHaveSideEffect(void *node);
   bool SplitMultiAssign(void *scope);
   void *convertAssign(void *node);
