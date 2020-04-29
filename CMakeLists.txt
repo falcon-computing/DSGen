@@ -192,7 +192,7 @@ target_link_libraries(ds_generator
   legacy_parsers
   rose
   ${Boost_LIBRARIES}
-  ${JsonCPP_LIBRARIES}
+  jsoncpp
   ${CMAKE_DL_LIBS} 
   ${CMAKE_THREAD_LIBS_INIT}
 )
@@ -208,7 +208,7 @@ target_link_libraries(ds_generator_test
   legacy_ir 
   legacy_parsers
   rose
-  ${JsonCPP_LIBRARIES}
+  jsoncpp
   ${CMAKE_DL_LIBS} 
   ${CMAKE_THREAD_LIBS_INIT}
   ${Boost_LIBRARIES}
