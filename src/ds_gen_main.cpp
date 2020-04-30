@@ -2,6 +2,7 @@
 
 #include <string>
 #include <sstream>
+// #include <fstream>
 
 string exec(const char* cmd) {
     array<char, 512> buffer;
@@ -15,6 +16,12 @@ string exec(const char* cmd) {
     }
     return result;
 }
+
+bool IsEmpty(std::ifstream& pFile)
+{
+    return pFile.peek() == std::ifstream::traits_type::eof();
+}
+
 
 int main(int argc, char* argv[]) {
   string str_prj;
@@ -40,6 +47,12 @@ int main(int argc, char* argv[]) {
       str_args;    
   cout<<cmd<<"\n"; 
   system(cmd.c_str());
+
+  std::ifstream crit_msg_file("critical_message.rpt");
+
+  if (crit_msg_file && !IsEmpty(crit_msg_file)) {
+    throw std::exception();   
+  }
 
   ROSE_INITIALIZE;
   CInputOptions options;
