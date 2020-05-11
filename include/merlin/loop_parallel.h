@@ -57,6 +57,11 @@ class LoopParallel {
   // Intel flow
   int loop_parallel_intel_top();
   int parse_pragma_intel();
+
+ protected:
+  void check_dependency_msg(
+    CMirNode *bNode, string *msg_dep,
+    std::map<void *, std::map<int, int>> array_partitions);
 };
 
 bool check_legal_complete_unroll(CSageCodeGen *codegen, void *sg_loop,
@@ -71,9 +76,6 @@ void check_false_dependency_xilinx(CSageCodeGen *codegen, void *sg_pragma,
                                    void *target_var);
 void check_false_dependency_xilinx(CSageCodeGen *codegen, void *pTopFunc,
                                    const CInputOptions &options);
-void check_dependency_msg(
-    CSageCodeGen *codegen, CMarsIr *mars_ir, CMirNode *bNode, string *msg_dep,
-    std::map<void *, std::map<int, int>> array_partitions);
 void check_false_dependency_intel(CSageCodeGen *codegen, void *pTopFunc,
                                   const CInputOptions &options);
 bool check_false_dependency_intel(CSageCodeGen *codegen, void *sg_pragma,

@@ -2362,6 +2362,8 @@ class CSageCodeGen {
 
   std::string GetSafeNewVarName(const std::string &prefix, void *scope);
 
+  void removeSpaces(string *stringIn);
+
  protected:
 #if USED_CODE_IN_COVERAGE_TEST
   std::vector<std::string>

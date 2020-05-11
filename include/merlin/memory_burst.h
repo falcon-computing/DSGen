@@ -74,7 +74,7 @@ class MemoryBurst {
         mNaive_tag(false), mMemcpy_inline(false), mAltera_flow(false),
         m_report_out_of_resource(!report), mEffort(STANDARD),
         m_length_threshold(1024), m_wide_bus_length_lower_threshold(10240),
-        m_partition_factor_upper_threshold(256),
+        m_partition_factor_upper_threshold(2048),
         m_lift_fine_grained_cache(true), m_top_kernel(nullptr) {
     init();
   }

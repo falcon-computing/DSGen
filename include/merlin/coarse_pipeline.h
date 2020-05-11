@@ -214,3 +214,6 @@ void build_node_functions(CSageCodeGen *codegen, CMirNode *bNode,
 bool check_range_bound(CSageCodeGen *codegen, CMarsIr *mars_ir,
                        CMarsRangeExpr *m_range, vector<size_t> *lb_size,
                        vector<size_t> *ub_size);
+void partition_pragma_gen_xilinx(CSageCodeGen *codegen, void *arr_init, int dim,
+                                 int factor);
+

@@ -807,7 +807,7 @@
 #define WDBUS_WARNING_11(x, y)                                                 \
   WDBUS_WARNING(11, "Memory coalescing NOT inferred: variable " + (x) +        \
                         "\n  Reason: burst length is less than threshold (" +  \
-                        (y) + " bytes).\n" +                                   \
+                        (y) + " elements).\n" +                                \
                         "  Hint: reset threshold by using --attribute "        \
                         "bus_length_threshold=?")
 #define WDBUS_WARNING_12(x)                                                    \
@@ -822,6 +822,12 @@
   WDBUS_WARNING(14, "Memory coalescing NOT inferred: variable " + (x) +        \
                         "  Reason: the original bitwidth is unknown.\n" +      \
                         "  Hint: cannot support struct/class type now")
+
+#define WDBUS_WARNING_15(x, y)                                                 \
+  WDBUS_WARNING(15, "Memory coalescing NOT inferred: variable " + (x) +        \
+                        "\n  because of unsupported original bitwidth (" +     \
+                        (y) + " bits)." + "\n Hint: only support power " +     \
+                        "of two and no less than 8 bitwidth")
 #define REDUC_WARNING_1(x, y)                                                  \
   REDUC_INFO(2, "Disabling automatic reduction in loop " + (x) +               \
                     " because of multiple reduction operations:\n" + (y) +     \

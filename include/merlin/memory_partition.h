@@ -41,6 +41,7 @@ class MemoryPartition {
   std::map<void *, int> cache_var_dim;
   std::map<void *, std::vector<size_t>> cache_var_size;
   std::map<void *, void *> cache_var_base_type;
+  map<void *, vector<void *>> hls_resource_table;
   bool OutOfBound;
 
   void dual_port_adjust();
@@ -84,11 +85,12 @@ class MemoryPartition {
       std::map<void *, std::vector<std::map<int, int>>> *v_factors);
   void index_transform(CMirNode *bNode);
   void array_index_transform();
+  bool partition_pragma_gen_xilinx(void *arr_init, int dim,
+                                 int factor);
+  void check_hls_resource();
 };
 
 // Xilinx flow
-void partition_pragma_gen_xilinx(CSageCodeGen *codegen, void *arr_init, int dim,
-                                 int factor);
 void enumerate_point_space(const std::vector<int> &dim_size,
                            std::vector<std::vector<int>> *point_set);
 int index_switch_transform(CSageCodeGen *codegen, void *input_array,

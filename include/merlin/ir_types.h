@@ -89,6 +89,7 @@ static const char CMOST_ARR_PARTITION[] = "ARRAY_PARTITION";
 static const char CMOST_ARR_PARTITION_low[] = "array_partition";
 static const char HLS_PRAGMA[] = "HLS";  // vivado pragma
 static const char HLS_ARR_PARTITION[] = "ARRAY_PARTITION";
+static const char HLS_RESOURCE[] = "RESOURCE";
 static const char HLS_ARRAY[] = "ARRAY";
 static const char HLS_PARTITION[] = "PARTITION";
 static const char HLS_TRIPCOUNT[] = "LOOP_TRIPCOUNT";

@@ -41,7 +41,7 @@ class MemoryCoalescingXilinx {
       : m_ast(Codegen), mTopFunc(pTopFunc), mOptions(Options), mBitWidth(512),
         mBitWidthSpecified(false), mMaxDimension(5), mNaiveHLS(false),
         mEnableCDesign(false), mEnableSubOptimal(false),
-        m_length_threshold(1024), mCpp_design(false), mWideBusFlag(false) {
+        m_length_threshold(128), mCpp_design(false), mWideBusFlag(false) {
     init(Codegen);
   }
   bool run();
@@ -118,23 +118,14 @@ class MemoryCoalescingXilinx {
   std::map<void *, std::vector<ArgumentInfo>> mFunc2Info;
   std::set<void *> mDead_func_calls;
 
-  const std::vector<std::string> m_supported_types{"int",
-                                                   "unsigned int",
-                                                   "signed int",
-                                                   "char",
-                                                   "signed char",
-                                                   "unsigned char",
-                                                   "short",
-                                                   "signed short",
-                                                   "unsigned short",
-                                                   "long",
-                                                   "signed long",
-                                                   "unsigned long",
-                                                   "long long",
-                                                   "signed long long",
-                                                   "unsigned long long",
-                                                   "float",
-                                                   "double"};
+  const std::vector<std::string> m_supported_types{
+      "int",       "unsigned int",     "signed int",
+      "char",      "signed char",      "unsigned char",
+      "short",     "signed short",     "unsigned short",
+      "long",      "signed long",      "unsigned long",
+      "long long", "signed long long", "unsigned long long",
+      "float",     "double",           "ap_int",
+      "ap_uint"};
 };
 
 #endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MEMORY_COALESCING_XILINX_H_

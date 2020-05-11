@@ -49,6 +49,7 @@ class PreProcess {
   bool run();
 
   bool processPragma();
+  bool parseHLSPragma();
   void build_mars_ir(bool check_pragma, bool pragma_in_loop, bool build_node);
 
   void pre_check();
