@@ -29,7 +29,7 @@ void DsGenerator::BuildTiling(void *scope_stmt,
     // Setup tiling design space
     vector<int> options;
     options.push_back(1);
-    for (int i = 2; i < 16; i *= 2)
+    for (int i = 2; i < tc; i *= 2)
       options.push_back(i);
     if ((tc & (tc - 1)) != 0) {
       // The upper-bound is not power of two, cover it separately
