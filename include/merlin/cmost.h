@@ -1,3 +1,13 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights
+ *reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 //  #include <stdio.h>
 //  #include <stdlib.h>
@@ -46,6 +56,11 @@ int cmost_free(void *a);
 int cmost_dump(void *a, const char *filename);
 
 void __merlin_access_range(
+#ifdef __cplusplus
+    ...
+#endif
+);
+void __merlin_streaming_range(
 #ifdef __cplusplus
     ...
 #endif

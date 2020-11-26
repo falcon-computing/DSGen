@@ -1,10 +1,20 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 
 #include <map>
 #include <set>
 #include <vector>
 #include <string>
-
+#include <unordered_set>
+#include <utility>
 #include "bsuGroup.h"
 #include "ir_types.h"
 
@@ -12,11 +22,21 @@ typedef std::map<SgInitializedName *, vector<SgPragmaDeclaration *>>
     node_pragma_map;
 
 class CMarsIr {
+ public:
+  enum flow_type { XILINX_HLS = 1, XILINX_SDX = 2, INTEL_AOCL = 3 };
+
+ private:
   set<void *> kernel_decl;
-  map<void *, vector<string>> kernel2interface;
+  map<void *, vector<std::unordered_set<string>>> kernel2interface;
   set<void *> reduction_decl;
   set<string> task_decl;
   bool mErrorOut;
+  // pair<var, pos>, map<traced_var, is_bus>>
+  map<pair<void *, void *>, map<void *, bool>> m_port_is_bus;
+  enum flow_type m_flow;
+
+ public:
+  void clear_port_is_bus_cache() { m_port_is_bus.clear(); }
 
  public:
   CMirNodeFuncSet ir_list;
@@ -26,8 +46,9 @@ class CMarsIr {
   void clear();
   typedef CMirNodeFuncSet::iterator iterator;
   void get_mars_ir(CSageCodeGen *codegen, void *pTopFunc,
-                   bool build_node = false, bool report = false,
-                   bool pragma_in_loop = true, bool while_support = false);
+                   const CInputOptions &options, bool build_node = false,
+                   bool report = false, bool pragma_in_loop = true,
+                   bool while_support = false);
   void build_mars_node(CSageCodeGen *codegen, void *pTopFunc,
                        const SetVector<void *> &all_kernel_funcs,
                        bool pragma_in_loop, bool report, bool while_support);
@@ -44,7 +65,8 @@ class CMarsIr {
   bool trace_to_bus_available(CSageCodeGen *codegen, void *kernel_decl,
                               void *target_arr, void *pos = nullptr);
   bool any_trace_is_bus(CSageCodeGen *codegen, void *kernel_decl,
-                        void *target_arr, void *pos = nullptr);
+                        void *target_arr, map<void *, bool> *res,
+                        void *pos = nullptr);
   bool every_trace_is_bus(CSageCodeGen *codegen, void *kernel_decl,
                           void *target_arr, void *pos = nullptr);
   void trace_to_bus_ports(CSageCodeGen *codegen, void *kernel_decl,
@@ -68,11 +90,8 @@ class CMarsIr {
     hls_partition_table[sg_arr] = pragma_vec;
   }
 
-  SgInitializedName *trace_to_the_bus(CSageCodeGen *codegen, void *pTopFunc,
-                                      void *curr_decl,
-                                      SgInitializedName *target_arr);
-
-  void check_hls_partition(CSageCodeGen *codegen, void *pTopFunc);
+  void check_hls_partition(CSageCodeGen *codegen, void *pTopFunc,
+                           bool include_interface = true);
   string getFactorString(SgPragmaDeclaration *decl);
   string getDimString(SgPragmaDeclaration *decl);
   bool getCompleteString(SgPragmaDeclaration *decl);

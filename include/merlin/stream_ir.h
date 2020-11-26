@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 //  ///////////////////////////////////////////////////////////  /
 //  stream_ir.h
 //
@@ -42,12 +51,13 @@ const int DEFAULT_CHANNEL_DEPTH = 32;
 //  3. pragma processing
 class CStreamBase {
  public:
-  CStreamBase(CMarsAST_IF *ast, CMarsIr *mars_ir, CMarsIrV2 *mars_ir_v2) {
+  CStreamBase(CMarsAST_IF *ast, const CInputOptions &options, CMarsIr *mars_ir,
+              CMarsIrV2 *mars_ir_v2) {
     m_ast = ast;
     //  liangz: create CMarsIrV2 if it is nullptr
     if (!mars_ir) {
       CMarsIr *my_mars_ir = new CMarsIr();
-      my_mars_ir->get_mars_ir(ast, ast->GetProject(), true);
+      my_mars_ir->get_mars_ir(ast, ast->GetProject(), options, true);
       m_mars_ir = my_mars_ir;
       isCMarsIRCreated = true;
     } else {
@@ -261,9 +271,13 @@ class CStreamBuffer : public CStreamBase {
 //  CStreamIR class - the main class for operations and containers
 //  ////////////////////////////////////////////////////  /
 class CStreamIR : public CStreamBase {
+  CInputOptions mOptions;
+
  public:
-  CStreamIR(CMarsAST_IF *ast, CMarsIr *mars_ir, CMarsIrV2 *mars_ir_v2)
-      : CStreamBase(ast, mars_ir, mars_ir_v2), m_num_stream(0) {}
+  CStreamIR(CMarsAST_IF *ast, const CInputOptions &option, CMarsIr *mars_ir,
+            CMarsIrV2 *mars_ir_v2)
+      : CStreamBase(ast, option, mars_ir, mars_ir_v2), mOptions(option),
+        m_num_stream(0) {}
 
   ~CStreamIR() { clear(); }
 

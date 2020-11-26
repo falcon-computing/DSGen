@@ -1,3 +1,13 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights
+ *reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BSUNODE_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BSUNODE_H_
 
@@ -15,7 +25,6 @@
 
 class CMirNode;
 
-typedef std::list<SgNode *> sgnode_list;
 typedef std::map<string, int> array_table_list;
 
 /* YUXIN:
@@ -44,10 +53,8 @@ class CMirNode {
   bool is_curr_affine;  //  Current loop level is affine or not
   string order_vec_string;
   array_table_list full_array_list;
-  map<void *, vector<void *>> full_access_table_v2;
-
-  sgnode_list child_table;
-  sgnode_list pragma_table;
+  map<void *, set<void *>> full_access_table_v2;
+  vector<void *> pragma_table;
 
   //  additional structure
   bool is_fine_grain;  //  consider the impact of pragma, e.g.
@@ -78,6 +85,8 @@ class CMirNode {
 
   int has_opt_pragmas();
   int has_pipeline();
+  int has_hls_fg_opt();
+  int has_hls_unroll();
   int has_parallel();
 
   int has_tiling();
@@ -109,11 +118,6 @@ class CMirNode {
                                       vector<SgExpression *> *upper,
                                       vector<int> *ub_limit_vec);
   bool isAffineRange();
-  //    bool parse_full_accesses(CSageCodeGen *codegen, int dim, void* arr_init,
-  //                vector<map<void*, int>> &index_expr_full, int &mod_size);
-
-  //    bool check_relation(CSageCodeGen *codegen, int dim,
-  //                void *arr_init,  void * curr_loop, bool &recur_tag);
   void node_liveness_analysis();
 
   //  interface

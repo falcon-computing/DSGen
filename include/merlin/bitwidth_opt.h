@@ -1,3 +1,13 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights
+ *reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BITWIDTH_OPT_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BITWIDTH_OPT_H_
 #include <vector>
@@ -46,8 +56,8 @@ struct MemcpyInfo {
   int opt_bitwidth;
   int dimension;
   int opt_dimension;
-  bool unaligned;
-  int aligned;
+  bool unaligned_buffer;
+  int aligned_dimension;
   std::vector<size_t> dimension_size;
   MemcpyInfo() {
     port.resize(2);
@@ -55,8 +65,8 @@ struct MemcpyInfo {
     read = false;
     dimension = -1;
     opt_dimension = -1;
-    unaligned = false;
-    aligned = 0;
+    unaligned_buffer = false;
+    aligned_dimension = 0;
     bitwidth = 0;
     opt_bitwidth = 0;
     base_type = nullptr;
@@ -65,8 +75,10 @@ struct MemcpyInfo {
       : port(info.port), length_exp(info.length_exp), base_type(info.base_type),
         read(info.read), bitwidth(info.bitwidth),
         opt_bitwidth(info.opt_bitwidth), dimension(info.dimension),
-        opt_dimension(info.opt_dimension), unaligned(info.unaligned),
-        aligned(info.aligned), dimension_size(info.dimension_size) {}
+        opt_dimension(info.opt_dimension),
+        unaligned_buffer(info.unaligned_buffer),
+        aligned_dimension(info.aligned_dimension),
+        dimension_size(info.dimension_size) {}
 };
 
 struct SingleAssignInfo {
@@ -97,7 +109,6 @@ struct CallInfo {
 
 struct ArgumentInfo {
   bool any_burst_access;
-  bool short_burst_access;
   bool all_support_access;
   bool suboptimal_coalescing;
   bool need_changed;
@@ -105,12 +116,13 @@ struct ArgumentInfo {
   int bitwidth;
   int opt_bitwidth;
   bool specified_bitwidth;
+  enum access_type ac_type;
+  bool any_unaligned_access;
   std::map<void *, std::vector<CallInfo>> calls2ref;
   std::map<void *, MemcpyInfo> memcpy;
   std::map<void *, SingleAssignInfo> single_assign;
   ArgumentInfo() {
     any_burst_access = false;
-    short_burst_access = false;
     all_support_access = true;
     suboptimal_coalescing = false;
     need_changed = false;
@@ -118,16 +130,19 @@ struct ArgumentInfo {
     bitwidth = 0;
     opt_bitwidth = 0;
     specified_bitwidth = false;
+    ac_type = NO_ACCESS;
+    any_unaligned_access = false;
   }
   ArgumentInfo(const ArgumentInfo &info)
       : any_burst_access(info.any_burst_access),
-        short_burst_access(info.short_burst_access),
         all_support_access(info.all_support_access),
         suboptimal_coalescing(info.suboptimal_coalescing),
         need_changed(info.need_changed), base_type(info.base_type),
         bitwidth(info.bitwidth), opt_bitwidth(info.opt_bitwidth),
-        specified_bitwidth(info.specified_bitwidth), calls2ref(info.calls2ref),
-        memcpy(info.memcpy), single_assign(info.single_assign) {}
+        specified_bitwidth(info.specified_bitwidth), ac_type(info.ac_type),
+        any_unaligned_access(info.any_unaligned_access),
+        calls2ref(info.calls2ref), memcpy(info.memcpy),
+        single_assign(info.single_assign) {}
 };
 
 #endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BITWIDTH_OPT_H_

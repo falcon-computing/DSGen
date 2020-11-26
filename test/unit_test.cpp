@@ -82,6 +82,7 @@ map<string, void*> DsGeneratorTest::CollectLoops(CSageCodeGen &m_ast,
 TEST_F(DsGeneratorTest, InitScopePragmas) {
   CSageCodeGen m_ast;
   DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
+  m_ast.InitBuiltinTypes();
   EXPECT_FALSE(dg.InitScopePragmas());
   PragmaMap &map_scope_pragmas = dg.GetMapScopePragmas();
   for (auto &scope_pragmas: map_scope_pragmas) {
@@ -113,11 +114,13 @@ TEST_F(DsGeneratorTest, InitScopePragmas) {
       }
     }
   }  
+  m_ast.GenerateCode();  
 }
 
 TEST_F(DsGeneratorTest, GetAllDivisors) {
   CSageCodeGen m_ast;
   DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
+  m_ast.InitBuiltinTypes();
   vector<int>ret1, ret2, ret3, ret4;
   ret1 = dg.GetAllDivisors(28, 7);
   EXPECT_EQ(1, ret1[0]);
@@ -139,11 +142,13 @@ TEST_F(DsGeneratorTest, GetAllDivisors) {
   EXPECT_EQ(4, ret4[2]);
   EXPECT_EQ(7, ret4[3]);
   EXPECT_EQ(4, ret4.size());
+  m_ast.GenerateCode();  
 }
 
 TEST_F(DsGeneratorTest, AllLoopNodes) {
   CSageCodeGen m_ast;
   DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
+  m_ast.InitBuiltinTypes();
 
   vector<CMirNode *> fn_loop_nodes;
   CMarsIr &mars_ir = dg.GetCMarsIr();
@@ -156,11 +161,13 @@ TEST_F(DsGeneratorTest, AllLoopNodes) {
       continue;
     EXPECT_TRUE(node->has_loop);   
   }
+  m_ast.GenerateCode();  
 }
 
 TEST_F(DsGeneratorTest, UpdateUserSpecifiedPragma) {
   CSageCodeGen m_ast;
   DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
+  m_ast.InitBuiltinTypes();
   map<string, void *> loops = CollectLoops(m_ast, dg);
 
   void *scope_stmt_1 = loops["__UT_L1"];
@@ -177,11 +184,13 @@ TEST_F(DsGeneratorTest, UpdateUserSpecifiedPragma) {
   EXPECT_FALSE(dg.UpdateUserSpecifiedPragma(scope_stmt_2, PIPELINE, "some_id"));  
   EXPECT_FALSE(dg.UpdateUserSpecifiedPragma(scope_stmt_2, TILING, "some_id"));  
   EXPECT_FALSE(dg.UpdateUserSpecifiedPragma(scope_stmt_2, PARALLEL, "some_id"));  
+  m_ast.GenerateCode();  
 }
 
 TEST_F(DsGeneratorTest, SetUserPragmaInfo) {
   CSageCodeGen m_ast;
   DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
+  m_ast.InitBuiltinTypes();
   map<string, void *> loops = CollectLoops(m_ast, dg);
 
   void *scope_stmt_1 = loops["__UT_L1"];
@@ -199,9 +208,10 @@ TEST_F(DsGeneratorTest, SetUserPragmaInfo) {
   pragma_info = boost::any_cast<PragmaInfo<string> *>(
                   map_scope_pragmas[scope_stmt_1]->get(PIPELINE));
   EXPECT_EQ(pragma_info->default_value, "flatten");
-
+  m_ast.InsertStmt(pragma_flatten, scope_stmt_1);
   string pragma_str_off = "ACCEL PIPELINE off";
   pragma_off = m_ast.CreatePragma(pragma_str_off, scope_stmt_1);
+  m_ast.InsertStmt(pragma_off, scope_stmt_1);
   dg.SetUserPragmaInfo(scope_stmt_1, pragma_off, "id", PIPELINE);
   pragma_info = boost::any_cast<PragmaInfo<string> *>(
                   map_scope_pragmas[scope_stmt_1]->get(PIPELINE));
@@ -209,6 +219,7 @@ TEST_F(DsGeneratorTest, SetUserPragmaInfo) {
 
   string pragma_str_on = "ACCEL PIPELINE";
   pragma_on = m_ast.CreatePragma(pragma_str_on, scope_stmt_1);
+  m_ast.InsertStmt(pragma_on, scope_stmt_1);
   dg.SetUserPragmaInfo(scope_stmt_1, pragma_on, "id", PIPELINE);
   pragma_info = boost::any_cast<PragmaInfo<string> *>(
                   map_scope_pragmas[scope_stmt_1]->get(PIPELINE));
@@ -216,6 +227,7 @@ TEST_F(DsGeneratorTest, SetUserPragmaInfo) {
 
   string pragma_str_rand = "ACCEL PIPELINE wtf";
   pragma_rand = m_ast.CreatePragma(pragma_str_rand, scope_stmt_1);
+  m_ast.InsertStmt(pragma_rand, scope_stmt_1);
   dg.SetUserPragmaInfo(scope_stmt_1, pragma_rand, "id", PIPELINE);
   pragma_info = boost::any_cast<PragmaInfo<string> *>(
                   map_scope_pragmas[scope_stmt_1]->get(PIPELINE));
@@ -229,6 +241,7 @@ TEST_F(DsGeneratorTest, SetUserPragmaInfo) {
   // reject addtional parameters
   string pragma_str_tiling = "ACCEL TILING FACTOR=2";
   pragma_tiling_normal = m_ast.CreatePragma(pragma_str_tiling, scope_stmt_1);
+  m_ast.InsertStmt(pragma_tiling_normal, scope_stmt_1);
   dg.SetUserPragmaInfo(scope_stmt_1, pragma_tiling_normal, "id", TILING);  
   pragma_info = boost::any_cast<PragmaInfo<int> *>(
                   map_scope_pragmas[scope_stmt_1]->get(TILING));
@@ -242,16 +255,20 @@ TEST_F(DsGeneratorTest, SetUserPragmaInfo) {
   // reject addtional parameters
   string pragma_str_parallel = "ACCEL PARALLEL FACTOR=2";
   pragma_parallel_normal = m_ast.CreatePragma(pragma_str_parallel, scope_stmt_1);
+  m_ast.InsertStmt(pragma_parallel_normal, scope_stmt_1);
   dg.SetUserPragmaInfo(scope_stmt_1, pragma_parallel_normal, "id", PARALLEL);  
   pragma_info = boost::any_cast<PragmaInfo<int> *>(
                   map_scope_pragmas[scope_stmt_1]->get(PARALLEL));
   EXPECT_EQ(pragma_info->default_value, 2);
   }
+  m_ast.GenerateCode();  
 }
 
 TEST_F(DsGeneratorTest, GetShadowedParams) {
   CSageCodeGen m_ast;
   DsGenerator dg(m_ast, m_ast.OpenSourceFile(vec_src_list, ""), options);
+  m_ast.InitBuiltinTypes();
+  dg.InitScopePragmas();
   map<string, void *> loops = CollectLoops(m_ast, dg);
 
   void *scope_stmt_2 = loops["__UT_L2"];
@@ -265,6 +282,7 @@ TEST_F(DsGeneratorTest, GetShadowedParams) {
   dg.UpdateUserSpecifiedPragma(scope_stmt_2, TILING, "__TILING__L2");
   dg.GetShadowedParams(scope_stmt_2, TILING, free_vec, fixed_vec);
   EXPECT_EQ(fixed_vec.size(), 0);
+  m_ast.GenerateCode();  
 }
 
 } // namespace

@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 #include "mars_opt.h"
 #define MARS_INFO(pass, msg, num) XTR(pass), XTR(INFO), msg, (num) + 100
@@ -84,10 +93,18 @@
 #define MSG_RPT_INFO(num, msg) MARS_INFO(MSG_RPT, msg, num)
 #define MSG_RPT_WARNING(num, msg) MARS_WARNING(MSG_RPT, msg, num)
 #define MSG_RPT_ERROR(num, msg) MARS_ERROR(MSG_RPT, msg, num)
+#define LWCPP_INFO(num, msg) MARS_INFO(LWCPP, msg, num)
+#define LWCPP_WARNING(num, msg) MARS_WARNING(LWCPP, msg, num)
+#define LWCPP_ERROR(num, msg) MARS_ERROR(LWCPP, msg, num)
 
 //  ////////////////////////////////////////////  /
 //  All Error out messages (limitations)
 //  ////////////////////////////////////////////  /
+#define LWCPP_ERROR_1(x) LWCPP_ERROR(1, (x))
+#define LWCPP_ERROR_2(x) LWCPP_ERROR(2, (x))
+#define LWCPP_ERROR_3(x) LWCPP_ERROR(3, (x))
+#define LWCPP_WARNING_1(x) LWCPP_WARNING(1, (x))
+#define LWCPP_INFO_2(x) LWCPP_INFO(2, (x))
 #define PROCS_ERROR_3(x)                                                       \
   PROCS_ERROR(3, "Found a variable " + (x) +                                   \
                      " with C++ reference type in the kernel")
@@ -403,6 +420,9 @@
   SYNCHK_ERROR(38, "hls::stream<> used as non-reference or in non-pure "       \
                    "kernel flow is not supported:\n" +                         \
                        (x))
+#define SYNCHK_ERROR_39(x, y)                                                  \
+  SYNCHK_ERROR(39, "Member function " + (x) + "of class " + (y) +              \
+                       " has no definition")
 
 #define BURST_ERROR_1                                                          \
   BURST_ERROR(1, "Cannot pass function uniquifying checker\n"                  \
@@ -525,7 +545,7 @@
   BURST_INFO(1, "Memory burst inferred: variable " + (x) + " in scope " +      \
                     (z) + "\n  burst buffer size = " + (y) + " bytes")
 #define BURST_INFO_2(x, y)                                                     \
-  BURST_INFO(2, "Memory burst inferred manually: variable " + (x) +            \
+  BURST_INFO(2, "Detected manual memory burst: variable " + (x) +              \
                     "\n  burst buffer size = " + (y) + " bytes")
 #define BURST_INFO_3(x)                                                        \
   BURST_INFO(3, "Memory burst inferred manually: variable " + (x))
@@ -543,23 +563,16 @@
   REDUC_INFO(1, "Applying reduction on operation " + (y))
 // Yuxin: Dec/06/2019, dont report cyclic/block scheme
 #define CGPIP_INFO_1(x, y, z)                                                  \
-  CGPIP_INFO(1, "Coarse-grained pipelining applied on loop " + (x) + "  " +    \
-                    (y) + " nodes are scheduled into " + (z) +                 \
-                    " pipeline stages ")
-#define CGPAR_INFO_1(x)                                                        \
-  CGPAR_INFO(1, "Coarse-grained parallelization applied: loop " + (x))
-#define FGPIP_INFO_2(x, y, z)                                                  \
-  FGPIP_INFO(2, "Loop fine-grained parallelization applied: loop " + (x) +     \
-                    (y) + "  parallel units:  " + (z))
-#define FGPIP_INFO_3(x, y)                                                     \
-  FGPIP_INFO(3, "Loop fine-grained pipelining applied: loop " + (x) + (y))
+  CGPIP_INFO(1, "Loop " + (x) + " is pipelined " + +"with " + (z) + " stages")
+#define CGPAR_INFO_1(x) CGPAR_INFO(1, "Loop " + (x) + " is fully parallelized")
+#define FGPIP_INFO_2(x, y)                                                     \
+  FGPIP_INFO(2, "Loop " + (x) + (y) + " is fully parallelized")
+#define FGPIP_INFO_3(x, y) FGPIP_INFO(3, "Loop " + (x) + (y) + " is pipelined")
 #define FGPIP_INFO_8(x, y, z)                                                  \
-  FGPIP_INFO(8, "Loop fine-grained pipelineing applied: loop " + (x) + (y) +   \
-                    "\n  pipeline II:  " + (z))
+  FGPIP_INFO(8,                                                                \
+             "Loop " + (x) + (y) + " is pipelined with a target II of " + (z))
 #define FGPIP_INFO_5(x, y)                                                     \
-  FGPIP_INFO(5, "Loop parallelization applied: loop " + (x) + "\n" +           \
-                    "  parallel units:  " + (y) +                              \
-                    "\n")  // ZP: which one is applied, INFO_2 or INFO_5
+  FGPIP_INFO(5, "Loop " + (x) + " is parallelized with a factor of " + (y))
 #define FGPIP_INFO_6(x, y)                                                     \
   FGPIP_INFO(6, "False loop-carried data dependence applied to variable " +    \
                     (x) + "\n in loop " + (y))
@@ -609,6 +622,14 @@
 #define SYNCHK_WARNING_6(x)                                                    \
   SYNCHK_WARNING(6, "Goto statement may cause sub-optimal results " +          \
                         (x))  //  ZP: do we support goto
+#define MDARR_WARNING_1(var_info, type_info, pragma_info)                      \
+  MDARR_WARNING(                                                               \
+      1, "OpenCL host library generation is disabled because some of the "     \
+         "dimension sizes of the interface variable " +                        \
+             (var_info) + " of type \'" + (type_info) +                        \
+             "\' is not determined.\n" +                                       \
+             "  Hint: please specify the missing dimension sizes in the " +    \
+             "following pragma and add it to your kernel:\n" + (pragma_info))
 #define MDARR_WARNING_3(x)                                                     \
   MDARR_WARNING(                                                               \
       3, "Found a task interface variable unused in the kernel function " +    \
@@ -706,13 +727,15 @@
                         "Byte"                                                 \
                         " which may result in excessive on-chip memory usage." \
                         "  Suggest the const array size smaller than 1MB.")
-#define PROCS_WARNING_45(x)                                                    \
-  PROCS_WARNING(5, "Found a loop " + (x) + " without a bound on " +            \
-                       "its tripcount. " + "Please specify one using " +       \
-                       "'#pragma HLS loop_tripcount max=?' or 'assert'.")
-#define BURST_WARNING_1(x, y)                                                  \
+#define PROCS_WARNING_45(x, y)                                                 \
+  PROCS_WARNING(45, "Found a loop " + (x) + " without a bound on " +           \
+                        "its tripcount. " + "Please specify one using " +      \
+                        "'#pragma HLS loop_tripcount max=?' or 'assert'.\n" +  \
+                        "Use default max tripcount (" + (y) +                  \
+                        ") for analysis")
+#define BURST_WARNING_1(x, y, z)                                               \
   BURST_WARNING(                                                               \
-      1, "Memory burst NOT inferred: variable " + (x) +                        \
+      1, "Memory burst NOT inferred: variable " + (x) + " in scope " + (z) +   \
              "\n"                                                              \
              "  Reason: the bound of the access range is not determined (" +   \
              (y) +                                                             \
@@ -725,7 +748,8 @@
                        "\n"                                                    \
                        "  with insufficient on-chip memory (" +                \
                        (y) + " bytes required)\n" +                            \
-                       ((c) ? DECREASE_TILING_FATOR : LONG_BURST_HINT))
+                       ((c) ? DECREASE_TILING_FATOR                            \
+                            : " Hint: Tile it to reduce the cache size"))
 #define BURST_WARNING_3(x)                                                     \
   BURST_WARNING(3, "Cannot burst all the accesses of variable " + (x) +        \
                        " because of data dependence")
@@ -736,12 +760,10 @@
              ") \n"                                                            \
              "  Hint:   set accurate bound for variables using 'assert'")
 #define BURST_WARNING_5(x, z, y, c)                                            \
-  BURST_WARNING(                                                               \
-      5, "Memory burst NOT inferred : variable " + (x) + " in scope " + (z) +  \
-             " with big on-chip \n"                                            \
-             "  buffer.\n" +                                                   \
-             "  Reason: required burst buffer is too large (" + (y) +          \
-             " bytes)\n" + ((c) ? DECREASE_TILING_FATOR : LONG_BURST_HINT))
+  BURST_WARNING(5, "Memory burst NOT inferred : variable " + (x) +             \
+                       " in scope " + (z) + " is too big to be cached.\n" +    \
+                       ((c) ? DECREASE_TILING_FATOR                            \
+                            : " Hint: Tile it to reduce the cache size"))
 #define BURST_WARNING_6(x)                                                     \
   BURST_WARNING(6, "Memory burst NOT inferred: variable " + (x) +              \
                        ". Reason: improper streaming access order")
@@ -828,6 +850,12 @@
                         "\n  because of unsupported original bitwidth (" +     \
                         (y) + " bits)." + "\n Hint: only support power " +     \
                         "of two and no less than 8 bitwidth")
+#define WDBUS_WARNING_16(x, y)                                                 \
+  WDBUS_WARNING(                                                               \
+      16, "Memory coalescing NOT inferred: variable " + (x) +                  \
+              "\n  Reason: unaligned write only access in dataflow process " + \
+              (y) + "\n  Hint: Please align access if possible")
+
 #define REDUC_WARNING_1(x, y)                                                  \
   REDUC_INFO(2, "Disabling automatic reduction in loop " + (x) +               \
                     " because of multiple reduction operations:\n" + (y) +     \
@@ -881,9 +909,9 @@
                         "' in loop " + (y) +                                   \
                         ": the variable is declared in the loop scope\n")
 
-#define LINEBUF_INFO_1(x, y)                                                   \
+#define LINEBUF_INFO_1(x, y, z)                                                \
   LINEBUF_INFO(1, "Applying line buffer on variable '" + (x) + "' in loop " +  \
-                      (y))
+                      (y) + " with a " + (z) + " stencil")
 #define LINEBUF_WARNING_1(x, y)                                                \
   LINEBUF_WARNING(1, "Stopping line buffer optimization on variable '" + (x) + \
                          "' in loop " + (y) + ": line buffer is only for " +   \
@@ -1121,6 +1149,10 @@
   FGPIP_WARNING(21, "Ignoring pragma '" + (x) +                                \
                         "'  because of unknown partitioning factor '" + (y) +  \
                         "'")
+#define FGPIP_WARNING_22(x, y, z, t)                                           \
+  FGPIP_WARNING(22, "Pipelining loop " + (x) +                                 \
+                        " may lead to excessive resource usage " +             \
+                        "and long runtime in downstream tools.")
 
 //  ////////////////////////////////////////////  /
 //  All QoR Warning Messages (potential sub-optimal)
@@ -1185,6 +1217,19 @@
   BURST_WARNING(21, "Variable " + (x) + " in scope " + (y) +                   \
                         " is set to "                                          \
                         "write_only, which may result in an incorrect design")
+
+#define BURST_WARNING_22(x, y, z)                                              \
+  BURST_WARNING(22, "Memory burst NOT inferred: variable " + (x) +             \
+                        " in scope " + (y) +                                   \
+                        " which is fine grained scope.\n" +                    \
+                        " Hint: please apply cache pragma in the scope\n" +    \
+                        "  #pragma ACCEL cache variable=" + (z))
+#define BURST_WARNING_23(x, y, z)                                              \
+  BURST_WARNING(23, "Memory burst NOT inferred: variable " + (x) +             \
+                        " in scope " + (z) +                                   \
+                        "\n"                                                   \
+                        "  Reason: burst start address is variable (" +        \
+                        (y) + ")")
 
 #define WDBUS_WARNING_3(x, y)                                                  \
   WDBUS_WARNING(3, "Suboptimal memory coalescing: variable " + (x) +           \
@@ -1388,10 +1433,6 @@
                        " when its sub-loops are not fully parallelized.\n" +   \
                        "  Hint: use \"parallel flatten\" clause to "           \
                        "parallelize all the sub-loops")
-#define PROCS_WARNING_19                                                       \
-  PROCS_WARNING(19, "The pragma 'pipeline_parallel' is deprecated.\n"          \
-                    "  Hint: please use both individual 'pipeline' and "       \
-                    "'parallel' pragmas instead")
 #define GLOBL_ERROR_1(x)                                                       \
   GLOBL_ERROR(1, "Kernel and all the functions used in a kernel cannot be "    \
                  "declared in the header "                                     \
@@ -1402,9 +1443,6 @@
                  "shared by host, "                                            \
                  "if it contains global variable\n" +                          \
                      (x))
-#define INFTF_WARNING_1(x)                                                     \
-  INFTF_WARNING(1, "Stream prefetch for port " + (x) +                         \
-                       " in Xilinx flow is not supported")
 #define INFTF_ERROR_1(x, y)                                                    \
   INFTF_ERROR(                                                                 \
       1, "Kernel and all the functions used in a kernel cannot be declared "   \
@@ -1553,12 +1591,66 @@
              " with multiple accesses may result in QoR "                      \
              "degradation.\n" +                                                \
              "  Hint: please merge multiple accesses into single access")
+#define STREAM_WARNING_3                                                       \
+  STREAM_WARNING(3, "Streaming for Xilinx platform is not supported "          \
+                    "for C design.\n Hint: please change into C++ design")
+#define STREAM_WARNING_4(port_info)                                            \
+  STREAM_WARNING(4,                                                            \
+                 "Streaming checking failed for variable " + (port_info) +     \
+                     ".\n  Hint: only support read-only or write-only, single" \
+                     ", unconditional and sequential access")
 
+#define STREAM_WARNING_5(port_info, loop_info)                                 \
+  STREAM_WARNING(5, "Disable streaming for variable " + (port_info) +          \
+                        " because of data reuse in loop " + (loop_info))
+#define STREAM_WARNING_6(port_info, loop_info)                                 \
+  STREAM_WARNING(6, "Disable streaming for variable " + (port_info) +          \
+                        " because of coarse grained paralleled loop " +        \
+                        (loop_info))
+#define STREAM_WARNING_7(port_info, loop_info)                                 \
+  STREAM_WARNING(7, "Disable streaming for variable " + (port_info) +          \
+                        " because of partial paralleled loop " + (loop_info))
+#define STREAM_WARNING_8(port_info, parallel_factor, wide_bus_factor)          \
+  STREAM_WARNING(                                                              \
+      8, "Disable streaming for variable " + (port_info) +                     \
+             " because of incompatible coalescing and computation rates " +    \
+             "(parallel fator = " + (parallel_factor) +                        \
+             ", coalescing factor = " + (wide_bus_factor) + ")")
+#define STREAM_WARNING_9(port_info, start_address, burst_length,               \
+                         wide_bus_factor)                                      \
+  STREAM_WARNING(                                                              \
+      9,                                                                       \
+      "Disable streaming for variable " + (port_info) +                        \
+          " because of unaligned start address or unaligned access length " +  \
+          "(start address = " + (start_address) +                              \
+          ",  access length = " + (burst_length) + ", " +                      \
+          "coalescing factor = " + (wide_bus_factor) + ")")
+#define STREAM_WARNING_10(port_info, loop_info)                                \
+  STREAM_WARNING(10, "Disable streaming for variable " + (port_info) +         \
+                         " because of unsupported paralleled loop " +          \
+                         (loop_info))
+#define STREAM_WARNING_11(port_info)                                           \
+  STREAM_WARNING(                                                              \
+      11, "Streaming checking failed for variable " + (port_info) +            \
+              " because of multiple accesses.\n  Hint: please merge " +        \
+              "multiple continuous single accesses into a paralleled loop")
+#define STREAM_WARNING_12(port_info)                                           \
+  STREAM_WARNING(                                                              \
+      11, "Streaming checking failed for variable " + (port_info) +            \
+              " because of complex write access.\n  Hint: only simple " +      \
+              "assignment is supported")
+#define STREAM_WARNING_13(port_info, streaming_length)                         \
+  STREAM_WARNING(13, "Disable streaming for variable " + (port_info) +         \
+                         " because of too short length (" +                    \
+                         (streaming_length) + " elements")
+#define STREAM_INFO(num, msg) MARS_INFO(STREAM, msg, num)
+#define STREAM_INFO_1(port_info, scope_info, length, wide_bus_factor)          \
+  STREAM_INFO(1, "Streaming " + (length) + " elements of variable " +          \
+                     (port_info) + " in scope " + (scope_info) +               \
+                     " with a coalescing factor of " + (wide_bus_factor))
 #define FETCH_WARNING_1(x)                                                     \
   FETCH_WARNING(                                                               \
-      1,                                                                       \
-      "we do not support multiple access in stream prefetch for variable: " +  \
-          (x))
+      1, "we do not support multiple access in stream for variable: " + (x))
 #define FETCH_WARNING(num, msg) MARS_WARNING(FETCH, msg, num)
 
 #define CMOPT_INFO(num, msg) MARS_INFO(CMOPT, msg, num)

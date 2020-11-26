@@ -63,7 +63,7 @@ void DsGenerator::CanonicalizeIR() {
     build_mars_ir(false, false, true);
 
     bool Changed = false;
-    Changed |= CanonicalizeLoop();
+    Changed = CanonicalizeLoop();
 
     if (Changed) {
       m_ast.reset_func_decl_cache();
@@ -72,13 +72,15 @@ void DsGenerator::CanonicalizeIR() {
       clear_mars_ir();
       build_mars_ir(false, false, true);
     }
-
-    Changed |= StandardizeLoop();
+    
+    Changed = StandardizeLoop();
 
     if (Changed) {
       m_ast.reset_func_decl_cache();
       m_ast.reset_func_call_cache();
       m_ast.init_defuse_range_analysis();
+      clear_mars_ir();
+      build_mars_ir(false, false, true);
     }
 }
 
@@ -121,7 +123,7 @@ int DsGenerator::InitScopePragmas() {
 
 void DsGenerator::TraverseLoopDesignSpace(FnHandler fn,
                                           void *stmt, string loop_id) {
-  if (m_ast.IsForStatement(stmt) || m_ast.IsWhileStatement(stmt)){
+  if (m_ast.IsLoopStatement(stmt)){
     if (!map_scope_pragmas_.count(stmt)) {
       ScopePragmas *scope_pragmas = new ScopePragmas();
       map_scope_pragmas_[stmt] = scope_pragmas;
@@ -134,7 +136,7 @@ void DsGenerator::TraverseLoopDesignSpace(FnHandler fn,
 
   // Collect all child basic blocks
   // FIXME: Other blocks?
-  if (m_ast.IsForStatement(stmt) || m_ast.IsWhileStatement(stmt))
+  if (m_ast.IsLoopStatement(stmt))
     vec_body.push_back(m_ast.GetLoopBody(stmt));
   else if (m_ast.IsIfStatement(stmt)) {
     vec_body.push_back(m_ast.GetIfStmtTrueBody(stmt));
@@ -150,7 +152,7 @@ void DsGenerator::TraverseLoopDesignSpace(FnHandler fn,
       void *child = m_ast.GetChildStmt(body, i);
       if (m_ast.IsLabelStatement(child))
         child = m_ast.GetStmtFromLabel(child);
-      if (m_ast.IsForStatement(child) || m_ast.IsWhileStatement(child) ||
+      if (m_ast.IsLoopStatement(child) ||
           m_ast.IsIfStatement(child)) {
         TraverseLoopDesignSpace(fn, child,
                                 loop_id + "_" + to_string(level_idx++));

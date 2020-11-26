@@ -1,9 +1,18 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 
 #include <map>
 #include <string>
 #include <vector>
-
+#include <unordered_set>
 typedef std::map<int, int> index_expr_map;  //  FIXME:  (variable, coefficient)
 typedef std::map<int, int>
     range_table_map;  //  FIXME: Table of iteration space, correct only when the
@@ -27,6 +36,7 @@ static const char CMOST_coalescing_width[] = "COALESCING_WIDTH";
 static const char CMOST_INLINE[] = "INLINE";
 static const char CMOST_LOOP_TILE[] = "TILE";
 static const char CMOST_LOOP_TILED_TAG[] = "TILED_TAG";
+static const char CMOST_PARTIAL_PARALLEL_TAG[] = "PARTIAL_PARALLEL_TAG";
 static const char CMOST_cache[] = "CACHE";
 static const char CMOST_LOOP_TILING[] = "TILING";
 static const char CMOST_loop_tiling_option[] = "TILING_OPTION";
@@ -39,7 +49,6 @@ static const char CMOST_parallel_factor[] = "FACTOR";
 static const char CMOST_parallel_multi_level_factor[] = "PARALLEL_FACTOR";
 static const char CMOST_parallel[] = "PARALLEL";
 static const char CMOST_PIPELINE[] = "PIPELINE";
-static const char CMOST_PIPE_PARALLEL[] = "PIPELINE_PARALLEL";
 static const char CMOST_pipe_parallel_factor[] = "FACTOR";
 static const char CMOST_BURST[] = "BURST";
 static const char CMOST_bus_bitwidth[] = "BUS_BITWIDTH";
@@ -61,11 +70,15 @@ static const char CMOST_type_low[] = "type";
 static const char CMOST_data_type[] = "DATA_TYPE";
 static const char CMOST_depth[] = "DEPTH";
 static const char CMOST_max_depth[] = "MAX_DEPTH";
+static const char CMOST_migrate_mode[] = "MIGRATE_MODE";
 static const char CMOST_bank[] = "BANK";
 static const char CMOST_exclusive_option[] = "EXCLUSIVE_OPTION";
 static const char CMOST_exclusive[] = "EXCLUSIVE";
 static const char CMOST_fifo[] = "FIFO";
-static const char CMOST_bus[] = "AXI";
+static const std::unordered_set<std::string> HLS_GLOBAL_MEM_MODE = {"M_AXI",
+                                                                    "AP_BUS"};
+static const char CMOST_global_memory[] = "GLOBALMEMORY";
+static const char CMOST_bus[] = "M_AXI";
 static const char CMOST_interface[] = "INTERFACE";
 static const char CMOST_attribute[] = "ATTRIBUTE";
 static const char CMOST_systolic[] = "SYSTOLIC";
@@ -90,6 +103,7 @@ static const char CMOST_ARR_PARTITION_low[] = "array_partition";
 static const char HLS_PRAGMA[] = "HLS";  // vivado pragma
 static const char HLS_ARR_PARTITION[] = "ARRAY_PARTITION";
 static const char HLS_RESOURCE[] = "RESOURCE";
+static const char HLS_CORE[] = "CORE";
 static const char HLS_ARRAY[] = "ARRAY";
 static const char HLS_PARTITION[] = "PARTITION";
 static const char HLS_TRIPCOUNT[] = "LOOP_TRIPCOUNT";
@@ -102,21 +116,28 @@ static const char HLS_PIPELINE_low[] = "pipeline";
 static const char HLS_PIPELINE_II[] = "II";
 static const char HLS_UNROLL[] = "UNROLL";
 static const char HLS_UNROLL_low[] = "unroll";
+static const char HLS_interface[] = "INTERFACE";
+static const char HLS_port[] = "PORT";
+static const char HLS_register[] = "REGISTER";
 static const char CMOST_copy_in[] = "COPY_IN";
 static const char CMOST_copy_out[] = "COPY_OUT";
 static const char CMOST_copy[] = "COPY";
 static const char CMOST_burst_off[] = "BURST_OFF";
+static const char CMOST_explict_bundle[] = "EXPLICIT_BUNDLE";
 static const char CMOST_memory_burst[] = "MEMORY_BURST";
 static const char CMOST_burst_max_size[] = "MAX_BURST_SIZE";
 static const char CMOST_false_dep[] = "FALSE_DEPENDENCE";
 static const char CMOST_loop_flatten[] = "LOOP_FLATTEN";
 static const char CMOST_stream_prefetch[] = "STREAM_PREFETCH";
+static const char CMOST_bundle[] = "BUNDLE";
+static const char CMOST_stream[] = "STREAM";
 static const char CMOST_scheme[] = "SCHEME";
 static const char CMOST_block[] = "block";
 static const char CMOST_cyclic[] = "cyclic";
 static const char CMOST_reduction_scheme[] = "REDUCTION_SCHEME";
 static const char CMOST_wrapper[] = "WRAPPER";
 static const char CMOST_register[] = "REGISTER";
+static const char CMOST_mode[] = "MODE";
 static const char PRAGMA_TYPE_NODE[] = "STREAM_NODE";  // sub kernel
 static const char PRAGMA_TYPE_PORT[] =
     "STREAM_PORT";  //  single direction operation FIFO<->Array
@@ -138,3 +159,4 @@ static const char PRAGMA_DIM_NUM_ATTRIBUTE[] = "DIM_NUM";
 static const char PRAGMA_ACCESS_TYPE_ATTRIBUTE[] = "ACCESS_TYPE";
 static const char PRAGMA_CHANNEL_DEPTH_ATTRIBUTE[] = "CHANNEL_DEPTH";
 static const char PRAGMA_CHANNEL_DEPTH_ATTRIBUTE_DEFAULT[] = "32";
+static const char CMOST_streaming_access[] = "streaming_access";

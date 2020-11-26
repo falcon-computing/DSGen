@@ -1,3 +1,13 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights
+ *reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 
 #include <map>
@@ -216,4 +226,3 @@ bool check_range_bound(CSageCodeGen *codegen, CMarsIr *mars_ir,
                        vector<size_t> *ub_size);
 void partition_pragma_gen_xilinx(CSageCodeGen *codegen, void *arr_init, int dim,
                                  int factor);
-

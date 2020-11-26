@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_INPUT_CHECKER_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_INPUT_CHECKER_H_
 
@@ -27,21 +36,23 @@ using std::vector;
 
 extern void GetTLDMInfo_withPointer4(void *sg_node, void *pArg);
 int constant_propagation_top(CSageCodeGen *codegen, void *pTopFunc,
-                             const CInputOptions &option);
+                             const CInputOptions &option,
+                             bool assert_generation);
 
 class InputChecker {
  public:
   InputChecker(CSageCodeGen *codegen_, void *pTopFunc_,
                const CInputOptions &options_)
       : codegen(codegen_), pTopFunc(pTopFunc_), options(options_),
-        mAltera_flow(false), mXilinx_flow(false), mValidAltera(true),
-        mValid(true) {
+        mAltera_flow(false), mXilinx_flow(false), mHls_flow(false),
+        mValidAltera(true), mValid(true) {
     mPure_kernel = false;
     init();
   }
   InputChecker(CSageCodeGen *codegen_, void *pTopFunc_)
       : codegen(codegen_), pTopFunc(pTopFunc_), mAltera_flow(false),
-        mXilinx_flow(false), mValidAltera(true), mValid(true) {
+        mXilinx_flow(false), mHls_flow(false), mValidAltera(true),
+        mValid(true) {
     mPure_kernel = false;
   }
 
@@ -88,6 +99,7 @@ class InputChecker {
   CMarsIrV2 mMars_ir_v2;
   bool mAltera_flow;
   bool mXilinx_flow;
+  bool mHls_flow;
   bool mValidAltera;
   // bool mValidXilinx;
   bool mValid;

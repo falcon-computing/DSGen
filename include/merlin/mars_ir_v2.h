@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MARS_IR_V2_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MARS_IR_V2_H_
@@ -27,6 +36,7 @@ class CMarsIrV2 {
   std::set<void *> mAlteraChannels;
   std::set<void *> mSharedPorts;
   std::vector<CMarsNode *> mIrNodes;  //  MarsIR nodes
+  std::map<pair<void *, bool>, map<void *, bool>> m_port_is_bus;
 
   std::vector<CMarsEdge *> mIrEdgesList;  //  MarsIR nodes
   std::map<CMarsNode *, std::map<CMarsNode *, std::map<void *, CMarsEdge *>>>
@@ -83,6 +93,8 @@ class CMarsIrV2 {
   bool is_kernel(void *func_decl);
 
   bool is_valid() { return mValid; }
+
+  void clear_port_is_bus_cache() { m_port_is_bus.clear(); }
 
  public:
   bool is_kernel_port(void *sg_init_name);
@@ -210,6 +222,7 @@ class CMarsIrV2 {
   bool is_known_type(void *type);
   void collect_type_decl(void *decl, std::unordered_set<void *> *visited);
   void process_typedef(void *type, std::unordered_set<void *> *visited);
+  void process_base_type(void *type, std::unordered_set<void *> *visited);
   bool isEmptyStmtSequence(const std::vector<void *> &stmts);
 
   void createNode(

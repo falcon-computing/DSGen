@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 
 #include <map>
@@ -48,8 +57,8 @@ class PreProcess {
 
   bool run();
 
-  bool processPragma();
-  bool parseHLSPragma();
+  bool processPragma(bool pragma_in_loop);
+  bool parseHLSPragma(bool pragma_in_loop);
   void build_mars_ir(bool check_pragma, bool pragma_in_loop, bool build_node);
 
   void pre_check();

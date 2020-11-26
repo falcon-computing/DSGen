@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 #include <cassert>
 #include <map>
@@ -42,6 +51,11 @@ using std::vector;
   8192  // 1Kbytes for array in multiple work-item kernel
 #define MERLIN_SMALL_TRIP_COUNT_THRESHOLD 16
 #define MAX_PASS_LENGTH 100
+#define WIDE_BUS_LENGTH_THRESHOLD 128
+#define PARTITION_FACTOR_UPPER_THRESHOLD 256
+#define SINGLE_BUFFER_SIZE_THRESHOLD (1 * 1024 * 1024)
+#define OPENCL_HOST_GENERATION_DISABLED_TAG                                    \
+  ".opencl_host_generation_disable_tag"
 //  pass_name: MemBurst CoarseOpt FineOpt WideBus Outline Reduction
 //  level: INFO, WARNING, ERROR
 //  message: multi-line display message
