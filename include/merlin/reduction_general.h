@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 
 #include <map>
@@ -25,9 +34,9 @@ bool build_reduction_general(CSageCodeGen *codegen,
                              const std::map<void *, int> &loop_is_related,
                              const std::vector<void *> &loop_nest);
 
-bool anal_reduction(CSageCodeGen *codegen, CMarsIr *mars_ir, void *arr_pntr_ref,
-                    void *curr_op, void *target_var, string scheme_str,
-                    int *scheme_1_enabled, int *lift_level,
+bool anal_reduction(CSageCodeGen *codegen, CMarsIr *mars_ir, CMirNode *bNode,
+                    void *arr_pntr_ref, void *curr_op, void *target_var,
+                    string scheme_str, int *scheme_1_enabled, int *lift_level,
                     std::vector<void *> *vec_reduct_loops,
                     std::vector<void *> *vec_parallel_loops,
                     std::map<void *, int> *loop_is_related,
@@ -49,6 +58,8 @@ void check_reduction_op_var(CSageCodeGen *codegen, void *sg_scope,
                             std::vector<void *> *pntr_to_reduce);
 
 void reportWarnBenefit(CSageCodeGen *codegen, void *target_var, void *sg_loop);
+void reportVariableTripCount(CSageCodeGen *codegen, void *target_var,
+                             void *sg_loop);
 
 bool create_reduction_buf_and_refs(
     CSageCodeGen *codegen, int scheme_1_enabled,
@@ -65,7 +76,3 @@ bool create_reduction_buf_and_refs(
     void **insert_pos_local, void *insertLoop, void *target_var);
 
 void display_scheme(CSageCodeGen *codegen, int scheme_1_enabled, void *curr_op);
-
-void collect_pragmas(CSageCodeGen *codegen,
-                     map<void *, vector<void *>> *vec_pragmas,
-                     const vector<void *> &loop_nest);

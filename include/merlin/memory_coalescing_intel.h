@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MEMORY_COALESCING_INTEL_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MEMORY_COALESCING_INTEL_H_
 #include <map>
@@ -63,8 +72,6 @@ class MemoryCoalescingIntel {
   bool isSupportedType(void *base_type);
 
   bool checkInvalidBitWidth(int opt_bitwidth, int orig_bitwidth);
-
-  bool check_declaration(void *func_decl, std::string var_name);
 
   int memcpy_replace(const MemcpyInfo &info, void *func_call);
 

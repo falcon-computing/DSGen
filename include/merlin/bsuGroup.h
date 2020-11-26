@@ -1,3 +1,13 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights
+ *reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BSUGROUP_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BSUGROUP_H_
 
@@ -32,7 +42,6 @@ class CMirNodeSet : public mirnode_table_vec {
                             CMirNode *fNode);
   CMirNode *get_node(void *target_ref);
   void build_parent_relation();
-  void print();
   void printindex();
   void set_kernel() { top_node->set_kernel(); }
 

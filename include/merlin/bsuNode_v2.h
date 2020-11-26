@@ -1,3 +1,13 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights
+ *reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BSUNODE_V2_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BSUNODE_V2_H_
 
@@ -92,7 +102,7 @@ class CMarsNode {
   std::set<void *> get_common_ports(CMarsNode *other);
   bool is_after(CMarsNode *other);
   bool is_subNode(void *kernel_top, const std::vector<int> &order_prefix);
-  auto get_ports() const { return mPorts; }
+  SetVector<void*> get_ports() const { return mPorts; }
   std::set<void *> get_port_references(void *port) { return mPort2Pntr[port]; }
   std::set<void *> get_port_refs(void *port) { return mPort2Refs[port]; }
   void remove_port(void *port);
@@ -273,9 +283,12 @@ class CMarsLoop {
   std::set<void *> pragma_table;
   std::vector<CAnalPragma> vec_pragma;
   CMarsAST_IF *m_ast;
+  int64_t m_trip_count;
+  int64_t m_max_trip_count;
 
  public:
-  CMarsLoop(void *loop, CMarsAST_IF *ast) : ref(loop), m_ast(ast) {}
+  CMarsLoop(void *loop, CMarsAST_IF *ast)
+      : ref(loop), m_ast(ast), m_trip_count(-1), m_max_trip_count(-1) {}
   ~CMarsLoop() {}
 
   int has_opt_pragmas();
@@ -294,6 +307,9 @@ class CMarsLoop {
   }
 
   void analyze_pragma(void *decl);
+  void set_trip_count(int64_t trip_count, int64_t max_trip_count);
+  int64_t get_trip_count() const { return m_trip_count; }
+  int64_t get_max_trip_count() const { return m_max_trip_count; }
 };
 
 #endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_BSUNODE_V2_H_

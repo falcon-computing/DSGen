@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_COMM_OPT_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_COMM_OPT_H_
 #include <map>
@@ -119,5 +128,8 @@ bool check_dead_node(CMarsNode *);
 
 bool check_node(CMarsNode *node, map<void *, mark_struct> *loop2mark,
                 CMarsIrV2 *mars_ir, bool pre_check = false);
+// coarse_pipeline_altera
+void assign_schedule_for_marsIR_nodes(CMarsIrV2 *mars_ir,
+                                      bool detect_shared_memory = false);
 }  //  namespace MarsCommOpt
 #endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_COMM_OPT_H_

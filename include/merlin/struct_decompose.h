@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 #include <map>
 #include <tuple>
@@ -5,6 +14,7 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <unordered_set>
 #include <unordered_map>
 
 #include "cmdline_parser.h"
@@ -26,11 +36,25 @@ enum type_kind {
   SUPPORTED_COMPOUND_TYPE = 1,
   UNSUPPORTED_COMPOUND_TYPE = 2,
 };
+enum decomposed_info {
+  UNSUPPORTED_REPLACED_EXP = 0,
+  REPLACED_EXP = 1,
+  NO_REPLACED_EXP = 2,
+};
+
+struct DecomposedTypeInfo {
+  std::vector<std::tuple<string, void *, bool, bool>> res;
+  std::string message;
+  bool valid;
+  DecomposedTypeInfo() { valid = false; }
+};
+
 class StructDecompose {
   CMarsIr mMarsIr;
   CMarsIrV2 mMarsIrV2;
   CSageCodeGen *m_ast;
   void *mTopFunc;
+  CInputOptions mOptions;
   std::vector<void *> mKernelFuncs;
   std::set<void *> mKernelFuncsSet;
   std::set<void *> mTopKernel;
@@ -38,19 +62,44 @@ class StructDecompose {
   //  decomposed fields
   std::map<void *, std::vector<void *>> mVar2Members;
   bool mErrorOut;
-  std::string mTool_Type;
+  bool mXilinx_flow;
+  bool mIntel_flow;
+  bool m_aligned_struct_decomp;
+  bool mOpenCL_flow;
   std::set<std::string> mCheckedIdentifier;
   bool mCheckDimensionSize;
-  std::map<std::string, std::pair<void *, std::vector<size_t>>> mVar2ZeroDims;
+  std::map<void *, std::map<std::string, std::tuple<void *, std::vector<size_t>,
+                                                    std::string>>>
+      mVar2ZeroDims;
   std::map<std::string, int> mBuiltInFunc;
+  std::unordered_map<void *, bool> mUsedFields;
+  std::unordered_set<std::string> mUsedFieldNames;
+  std::unordered_map<std::string, std::string> m_global_token_map;
+  std::unordered_map<std::string, std::string> m_local_token_map;
 
-  std::set<void *> mUsedFields;
+  std::vector<pair<void *, void *>> m_var_vec;
+  std::map<void *, pair<enum type_kind, std::string>> m_type_info;
+  std::unordered_map<void *, DecomposedTypeInfo> m_cache_type_decomposed;
 
  public:
   StructDecompose(CSageCodeGen *codegen, void *pTopFunc,
                   const CInputOptions &option)
-      : m_ast(codegen), mTopFunc(pTopFunc), mCheckDimensionSize(true) {
-    mTool_Type = option.get_option_key_value("-a", "impl_tool");
+      : m_ast(codegen), mTopFunc(pTopFunc), mOptions(option),
+        mCheckDimensionSize(true) {
+    mXilinx_flow = option.get_option_key_value("-a", "impl_tool") == "sdaccel";
+    mIntel_flow = option.get_option_key_value("-a", "impl_tool") == "aocl";
+    if (mIntel_flow) {
+      mOpenCL_flow = true;
+    } else {
+      string tool_version = option.get_option_key_value("-a", "tool_version");
+      if (tool_version == "vivado_hls" || tool_version == "vitis_hls") {
+        mOpenCL_flow = false;
+      } else {
+        mOpenCL_flow = true;
+      }
+    }
+    m_aligned_struct_decomp =
+        option.get_option_key_value("-a", "aligned_struct_decomp") != "off";
     if (option.get_option_key_value("-a", "ignore_unknown_dim") != "")
       mCheckDimensionSize = false;
     init();
@@ -73,105 +122,155 @@ class StructDecompose {
   }
 
   enum type_kind containsCompoundType(void *sg_type, std::string *type_info) {
-    void *base_type = m_ast->GetBaseType(sg_type);
-    base_type = m_ast->GetOrigTypeByTypedef(base_type, true);
-    if (m_ast->IsScalarType(base_type) || cannotDecomposeType(base_type))
-      return SCALAR_TYPE;
-#if 0
-      void *unsupported_type = nullptr;
-      std::string reason;
-      if (m_ast->ContainsUnSupportedType(base_type, unsupported_type, reason)) {
-        cout << "find unsupported type: " << reason << endl;
-#if PROJDEBUG
-        cout << m_ast->_up(unsupported_type) << endl;
-#endif
-        std::set<std::pair<void*, std::string> > all_unsupported_types;
-        m_ast->GetAllUnSupportedType(base_type, all_unsupported_types);
-        for (auto type_pair : all_unsupported_types)
-          *type_info += type_pair.second + ": " +
-            m_ast->_up(type_pair.first) + "\n";
-        return UNSUPPORTED_COMPOUND_TYPE;
+    void *base_type = m_ast->GetBaseType(sg_type, true);
+    if (m_type_info.count(base_type) <= 0) {
+      enum type_kind res;
+      if (containsUnsupportedType(base_type, type_info, true)) {
+        cout << "find unsupported type: " << *type_info << endl;
+        res = UNSUPPORTED_COMPOUND_TYPE;
+      } else {
+        if (m_ast->IsStructureType(base_type) ||
+            m_ast->IsClassType(base_type)) {
+          if (donotDecomposeCompoundType(base_type))
+            res = SCALAR_TYPE;
+          else
+            res = SUPPORTED_COMPOUND_TYPE;
+        } else {
+          if (m_ast->IsScalarType(base_type) ||
+              cannotDecomposeType(base_type)) {
+            res = SCALAR_TYPE;
+          } else {
+            //  FIXME: we only struct/class type now
+            res = UNSUPPORTED_COMPOUND_TYPE;
+          }
+        }
       }
-#endif
-    if (m_ast->IsStructureType(base_type) || m_ast->IsClassType(base_type)) {
-      std::string class_type = m_ast->GetTypeNameByType(base_type, true);
-      if (mTool_Type == "sdaccel") {
-        if (class_type.find("ap_int") == 0 || class_type.find("ap_uint") == 0 ||
-            class_type.find("ap_fixed") == 0 ||
-            class_type.find("ap_ufixed") == 0 || class_type.find("hls::") == 0)
-          return SCALAR_TYPE;
-      }
-      if (class_type.find("merlin_stream") != std::string::npos)
-        return SCALAR_TYPE;
-
-      return SUPPORTED_COMPOUND_TYPE;
+      m_type_info[base_type] = std::make_pair(res, *type_info);
+      return res;
     }
-    //  FIXME: we only struct/class type now
-    return UNSUPPORTED_COMPOUND_TYPE;
+    auto &cache_res = m_type_info[base_type];
+    *type_info = cache_res.second;
+    return cache_res.first;
   }
 
-  int containsUnsupportedType(void *sg_type, std::string *type_info) {
-    void *base_type = m_ast->GetBaseType(sg_type);
-    base_type = m_ast->GetOrigTypeByTypedef(base_type, true);
+  int containsUnsupportedType(void *sg_type, std::string *type_info, bool top) {
+    if (top) {
+      if (m_ast->IsVoidType(m_ast->GetOrigTypeByTypedef(sg_type, true))) {
+        return 0;
+      }
+    }
+    void *base_type = m_ast->GetBaseType(sg_type, true);
     if (m_ast->IsEnumType(base_type) || m_ast->IsUnionType(base_type) ||
-        m_ast->IsIntegerType(base_type) || m_ast->IsFloatType(base_type))
+        m_ast->IsIntegerType(base_type) || m_ast->IsFloatType(base_type) ||
+        m_ast->IsComplexType(base_type))
       return 0;
     if (m_ast->IsStructureType(base_type) || m_ast->IsClassType(base_type)) {
-      std::string class_type = m_ast->GetTypeNameByType(base_type, true);
-      if (mTool_Type == "sdaccel") {
-        if (class_type.find("ap_int") == 0 || class_type.find("ap_uint") == 0 ||
-            class_type.find("ap_fixed") == 0 ||
-            class_type.find("ap_ufixed") == 0 || class_type.find("hls::") == 0)
-          return 0;
-      }
-      if (class_type.find("merlin_stream") != std::string::npos)
+      if (donotDecomposeCompoundType(base_type))
         return 0;
     }
     std::string reason;
     void *unsupported_type = nullptr;
-    if (m_ast->ContainsUnSupportedType(base_type, &unsupported_type, &reason,
-                                       mTool_Type != "sdaccel")) {
-      cout << "find unsupported type: " << reason << endl;
-#if PROJDEBUG
-      cout << m_ast->_up(unsupported_type) << endl;
-#endif
-      std::set<std::pair<void *, std::string>> all_unsupported_types;
-      m_ast->GetAllUnSupportedType(base_type, &all_unsupported_types);
-      for (auto type_pair : all_unsupported_types)
-        *type_info +=
-            type_pair.second + ": " + m_ast->_up(type_pair.first) + "\n";
-      return 1;
+    int ret = 0;
+    if (m_ast->IsRecursiveType(base_type, &unsupported_type) != 0) {
+      reason = "recursive type";
+      ret = 1;
+    } else if (m_ast->IsStructureType(base_type) != 0 ||
+               m_ast->IsClassType(base_type) != 0) {
+      void *type_decl = m_ast->GetTypeDeclByType(base_type, 1);
+      if (type_decl == nullptr) {
+        unsupported_type = base_type;
+        reason = "non-defined class type";
+        ret = 1;
+      } else {
+        vector<void *> vec_members;
+        m_ast->GetClassMembers(base_type, &vec_members);
+        for (auto member : vec_members) {
+          void *var_init = nullptr;
+          void *var_type = nullptr;
+          if (m_ast->IsVariableDecl(member) != 0) {
+            if (static_cast<SgVariableDeclaration *>(member)->get_bitfield() !=
+                nullptr) {
+              unsupported_type = member;
+              reason = "bitfield decl";
+              ret = 1;
+              break;
+            }
+            var_init = m_ast->GetVariableInitializedName(member);
+            var_type = m_ast->GetTypebyVar(var_init);
+          }
+
+          if (var_type != nullptr) {
+            if (containsUnsupportedType(var_type, &reason, false)) {
+              ret = 1;
+              break;
+            }
+          }
+          if (m_ast->IsStatic(member)) {
+            unsupported_type = member;
+            reason = "static class member";
+            ret = 1;
+            break;
+          }
+        }
+      }
+    } else {
+      ret = 1;
+      unsupported_type = base_type;
+      if (m_ast->IsFunctionType(base_type) != 0) {
+        reason = "function pointer type";
+      } else if (m_ast->IsUnionType(base_type) != 0) {
+        reason = "union type";
+      } else if (m_ast->IsVoidType(base_type) != 0) {
+        reason = "void type";
+      } else {
+        reason = "unknown type";
+      }
     }
-    *type_info += "unknown type: " + m_ast->_up(base_type) + "\n";
+    if (ret) {
+      *type_info += reason;
+      if (unsupported_type != nullptr)
+        *type_info += ": " + m_ast->_up(unsupported_type) + "\n";
+    }
     //  FIXME: we only struct/class type now
-    return 1;
+    return ret;
   }
 
   bool cannotDecomposeType(void *sg_type) {
-    void *base_type = m_ast->GetBaseType(sg_type);
-    base_type = m_ast->GetOrigTypeByTypedef(base_type, true);
-    if (m_ast->IsScalarType(base_type))
+    void *base_type = m_ast->GetBaseType(sg_type, true);
+    if (m_ast->IsStructureType(base_type) || m_ast->IsClassType(base_type)) {
+      if (donotDecomposeCompoundType(base_type))
+        return true;
+      return false;
+    }
+    if (m_ast->IsScalarType(base_type) || m_ast->IsComplexType(base_type))
       return true;
     if (m_ast->IsRecursiveType(base_type))
       return true;
     if (m_ast->IsFunctionType(base_type))
       return true;
-    if (m_ast->IsStructureType(base_type) || m_ast->IsClassType(base_type)) {
-      std::string class_type = m_ast->GetTypeNameByType(base_type, true);
-      if (mTool_Type == "sdaccel") {
-        if (class_type.find("ap_int") == 0 || class_type.find("ap_uint") == 0 ||
-            class_type.find("ap_fixed") == 0 ||
-            class_type.find("ap_ufixed") == 0 || class_type.find("hls::") == 0)
-          return true;
-      }
 
-      if (class_type.find("merlin_stream") != std::string::npos)
-        return true;
-
-      return false;
-    }
     //  unknown type
     return true;
+  }
+
+  bool donotDecomposeCompoundType(void *base_type) {
+    std::string class_type = m_ast->GetTypeNameByType(base_type, true);
+    if (mXilinx_flow) {
+      if (class_type.find("ap_int") == 0 || class_type.find("ap_uint") == 0 ||
+          class_type.find("ap_fixed") == 0 ||
+          class_type.find("ap_ufixed") == 0 || class_type.find("hls::") == 0 ||
+          class_type.find("complex") == 0 ||
+          class_type.find("std::complex") == 0)
+        return true;
+      if (!class_type.empty() &&
+          m_ast->IsStructureWithAlignedScalarData(base_type) &&
+          !m_aligned_struct_decomp)
+        return true;
+    }
+
+    if (class_type.find("merlin_stream") != std::string::npos)
+      return true;
+    return false;
   }
 
   int decomposeParameter(void *var_init, void *scope);
@@ -183,21 +282,23 @@ class StructDecompose {
   void decomposePragma(void *var_init, void *scope);
 
   void replaceVariableRefs(void *var_init, void *scope);
+
+  void checkRemainingVariableRefs(void *var_init, void *scope);
+
+  void replaceVariableRefsLater(void *var_init, void *scope);
   //  input: struct type
   //  output: a group of pair of name prefix and leaf node final type
   int decomposeType(
       void *sg_type,
       std::vector<std::tuple<std::string, void *, bool, bool>> *res, void *pos,
-      std::string *diagnosis_info, bool filter_unused_type,
-      void *sg_modifier_type = nullptr);
+      std::string *diagnosis_info, void *sg_modifier_type = nullptr);
 
   int decomposeType(
       void *sg_type,
-      std::vector<std::tuple<std::string, void *, bool, bool>> *res, void *pos,
-      bool filter_unused_fields) {
+      std::vector<std::tuple<std::string, void *, bool, bool>> *res,
+      void *pos) {
     std::string diagnosis_info;
-    return decomposeType(sg_type, res, pos, &diagnosis_info,
-                         filter_unused_fields);
+    return decomposeType(sg_type, res, pos, &diagnosis_info);
   }
 
   int canSafeDecompose(void *var_init, const std::vector<void *> &refs,
@@ -210,19 +311,26 @@ class StructDecompose {
 
   void *decomposeFunction(void *func_decl, bool *is_dead);
 
-  void *removeUnusedStructArguments(void *func_decl);
+  void *removeUnusedParameters(void *func_decl);
 
-  int decomposeExpression(void *leaf_exp, std::vector<void *> *vec_exp,
-                          bool filter_unused_fields);
+  decomposed_info decomposeExpression(void *leaf_exp,
+                                      std::vector<void *> *vec_exp);
 
-  int decomposeVariableRef(void *sg_var_ref, void **leaf_exp,
-                           std::vector<void *> *vec_new_exp,
-                           bool generate_new_expr, bool replace);
+  decomposed_info decomposeVariableRef(void *sg_var_ref, void **leaf_exp,
+                                       std::vector<void *> *vec_new_exp,
+                                       bool generate_new_expr, bool replace);
+  decomposed_info decomposeExpression(void *leaf_exp,
+                                      std::vector<void *> *vec_exp,
+                                      std::set<void *> *visited);
+
+  decomposed_info decomposeVariableRef(void *sg_var_ref, void **leaf_exp,
+                                       std::vector<void *> *vec_new_exp,
+                                       bool generate_new_expr, bool replace,
+                                       std::set<void *> *visited);
 
   int isKernelFunction(void *func_decl);
 
-  int get_leaf_expression_from_var_ref(void *var_ref, void **leaf_exp,
-                                       bool filter_unused_fields);
+  int get_leaf_expression_from_var_ref(void *var_ref, void **leaf_exp);
 #if 0
   void *createBuiltInAssignFunc(const std::string &func_name, void *struct_type,
                                 void *caller_decl, void *bindNode);
@@ -235,7 +343,8 @@ class StructDecompose {
 
   void replaceLocalVariableReference(void *new_body, void *orig_body);
 
-  int decomposeInitializer(void *orig_init, std::vector<void *> *vec_new_init) {
+  decomposed_info decomposeInitializer(void *orig_init,
+                                       std::vector<void *> *vec_new_init) {
     std::string diagnosis_info;
     return decomposeInitializer(orig_init, vec_new_init, false,
                                 &diagnosis_info);
@@ -246,9 +355,14 @@ class StructDecompose {
     return decomposeInitializer(orig_init, &vec_new_init, true, diagnosis_info);
   }
 
-  int decomposeInitializer(void *initializer,
-                           std::vector<void *> *new_initalizer, bool check,
-                           std::string *diagnosis_info);
+  decomposed_info decomposeInitializer(void *initializer,
+                                       std::vector<void *> *new_initalizer,
+                                       bool check, std::string *diagnosis_info);
+
+  decomposed_info decomposeInitializer(void *initializer,
+                                       std::vector<void *> *new_initalizer,
+                                       bool check, std::string *diagnosis_info,
+                                       std::set<void *> *visited);
 
   std::vector<size_t>
   get_array_dimension(std::string field_name, int *cont_flag, void *pos,
@@ -280,4 +394,12 @@ class StructDecompose {
   std::string get_qualified_member_name(void *var_init);
 
   void split_expression_with_side_effect(void *exp);
+
+  bool process_assign_exp(void *assign_exp, void *left_op, void *right_op,
+                          void *func);
+
+  void update_pragma_with_token_map(void *func);
+  void add_token_map(string arrow_mem_exp, string decomposed_name, bool global);
+  int get_dim_offset(string field_name, void *pos);
+  int get_dim_size(string field_name, void *pos);
 };

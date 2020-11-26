@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MEMORY_BURST_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MEMORY_BURST_H_
 #include <vector>
@@ -73,8 +82,9 @@ class MemoryBurst {
       : m_ast(codegen), mTopFunc(pTopFunc), mOptions(options),
         mNaive_tag(false), mMemcpy_inline(false), mAltera_flow(false),
         m_report_out_of_resource(!report), mEffort(STANDARD),
-        m_length_threshold(1024), m_wide_bus_length_lower_threshold(10240),
-        m_partition_factor_upper_threshold(256),
+        m_length_threshold(1024),
+        m_wide_bus_length_lower_threshold(WIDE_BUS_LENGTH_THRESHOLD),
+        m_partition_factor_upper_threshold(PARTITION_FACTOR_UPPER_THRESHOLD),
         m_lift_fine_grained_cache(true), m_top_kernel(nullptr) {
     init();
   }
@@ -107,6 +117,9 @@ class MemoryBurst {
     INFINITE_RANGE = 10,
     UNALIGNED_BURST_LENGTH = 11,
     UNALIGNED_BURST_OFFSET = 12,
+    BREAK_DATAFLOW = 13,
+    UNSUPPORTED_CONTROL_FLOW = 14,
+    NON_EXACT_WRITE_ONLY_IN_DATAFLOW = 15,
   };
 
   void cg_check_range_availability(
@@ -115,7 +128,7 @@ class MemoryBurst {
       MarsProgramAnalysis::CMarsExpression *me_start,
       MarsProgramAnalysis::CMarsExpression *me_length, int *is_applied,
       int64_t *buff_size, int *read_write, bool *is_non_negative_len,
-      bool report);
+      bool *is_exact, bool report);
 
  private:
   bool insert_burst(CMirNode *bNode, CMirNode *fNode, int node_num,
@@ -134,8 +147,6 @@ class MemoryBurst {
                     int64_t buffer_size, void *burst_scope, int node_num,
                     int buffer_count, int element_size);
   void insert_flatten(CMirNode *bNode, string tag_str);
-
-  bool check_declaration(void *kernel_decl, string arr_name);
 
   void add_header(void *pos);
 
@@ -169,7 +180,8 @@ class MemoryBurst {
   void *get_insert_loop(CMirNode *bNode, int burst_location);
 
   void reportUnboundAccess(void *array,
-                           const MarsProgramAnalysis::CMarsRangeExpr &range);
+                           const MarsProgramAnalysis::CMarsRangeExpr &range,
+                           void *scope);
 
   void reportPossibleNegativeAccessLength(
       void *scope, void *array,
@@ -187,11 +199,16 @@ class MemoryBurst {
                      int element_bytes);
 
   void cg_reportMessage(void *array, void *scope, int64_t buffer_size,
-                        int element_bytes, string kind);
+                        int element_bytes, string kind,
+                        bool aggressive_write_only = false);
 
   void reportPossibleNegativeAccessStart(
       const MarsProgramAnalysis::CMarsExpression &me_start, void *sg_array,
       void *sg_scope);
+
+  void reportLocalBurstStartAddress(
+      void *array, const MarsProgramAnalysis::CMarsExpression &start_address,
+      void *scope);
 
   bool isUnsupported(void *ref);
   bool isUnsupportedAndReport(void *ref);
@@ -207,12 +224,13 @@ class MemoryBurst {
       void *sg_scope, void *sg_array,
       const MarsProgramAnalysis::CMarsExpression &me_merged_start,
       const MarsProgramAnalysis::CMarsExpression &me_merged_length,
-      bool is_non_negative_merged_len,
+      bool is_non_negative_merged_len, bool is_merge_exact,
       const MarsProgramAnalysis::CMarsExpression &me_write_start,
       const MarsProgramAnalysis::CMarsExpression &me_write_length,
-      bool is_non_negative_write_len, int read_write, void **buf_decl,
-      void **memcpy_r, void **memcpy_w, int64_t *buffer_size,
-      bool check_constant_burst_len, bool report, int element_size);
+      bool is_non_negative_write_len, bool is_write_exact, int read_write,
+      void **buf_decl, void **memcpy_r, void **memcpy_w, int64_t *buffer_size,
+      bool check_constant_burst_len, bool report, int element_size,
+      bool *aggressive_write_only);
   int cg_transform_refs_in_scope(void *sg_array, void *offset, void *insert_pos,
                                  void *sg_array_replace, void *scope,
                                  int check_only,
@@ -222,7 +240,7 @@ class MemoryBurst {
                         const MarsProgramAnalysis::CMarsExpression &me_length,
                         void **buf_decl, void **memcpy_r, void **memcpy_w,
                         int read_only);
-  void
+  bool
   cg_get_merged_access_range(void *sg_scope, void *sg_array,
                              MarsProgramAnalysis::CMarsRangeExpr *mr_merged,
                              MarsProgramAnalysis::CMarsRangeExpr *mr_write,
@@ -243,6 +261,8 @@ class MemoryBurst {
                             int64_t *access_size, bool fifo_check = false,
                             bool report = false,
                             bool auto_coalecing_check = false);
+
+  int check_control_flow_availability(void *scope);
 
   int cg_check_delinearize_availability(
       void *sg_scope, void *sg_array,
@@ -267,11 +287,11 @@ class MemoryBurst {
 
   void update_mars_ir(void *port, void *scope);
 
-  void cg_transform_burst_for_parallel(
+  bool cg_transform_burst_for_parallel(
       void *sg_loop, void *sg_array,
       const MarsProgramAnalysis::CMarsExpression &me_start,
       const MarsProgramAnalysis::CMarsExpression &me_length,
-      bool is_non_negative_len, int read_write, void **buf_decl,
+      bool is_non_negative_len, bool is_exact, int read_write, void **buf_decl,
       void **memcpy_r, void **memcpy_w, int64_t *buffer_size, int para_size,
       int64_t lb, bool continuous, int element_size);
 
@@ -283,11 +303,11 @@ class MemoryBurst {
 
   int cg_get_access_size(void *array, void *scope);
 
-  void cg_transform_burst_for_data_reuse(
+  bool cg_transform_burst_for_data_reuse(
       void *sg_scope, void *sg_array,
       const MarsProgramAnalysis::CMarsExpression &me_start,
       const MarsProgramAnalysis::CMarsExpression &me_length,
-      bool is_non_negative_len, int read_write, void **buf_decl,
+      bool is_non_negative_len, bool is_exact, int read_write, void **buf_decl,
       void **memcpy_r, void **memcpy_w, int64_t *buffer_size,
       const std::vector<void *> &vec_loops, const std::vector<size_t> &vec_lens,
       const std::vector<void *> &vec_lbs, void *insert_pos, int element_size);

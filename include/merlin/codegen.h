@@ -1,3 +1,13 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights
+ *reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 
 #include <unordered_map>
@@ -64,10 +74,43 @@ typedef void *(*t_func_trace_up)(void *sg_node, void *pArg);
 //  std::pair<func_decl, func_call>
 typedef std::list<std::pair<void *, void *>> t_func_call_path;
 
+class CMarsIrV2;
+class CMarsIr;
+
+template <typename K, typename V> class linked_map {
+  using Entry = std::pair<K, V>;
+  using iterator = typename std::list<Entry>::iterator;
+  using const_iterator = typename std::list<Entry>::const_iterator;
+
+  std::list<Entry> _list;
+  std::unordered_map<K, iterator> _map;
+
+ public:
+  V &operator[](const K &key) {
+    auto it = _map.find(key);
+    if (it == _map.end()) {
+      _list.push_back({key, V()});
+      _map[key] = --_list.end();
+      return _map[key]->second;
+    } else {
+      return it->second->second;
+    }
+  }
+
+  iterator begin() { return _list.begin(); }
+  iterator end() { return _list.end(); }
+  const_iterator begin() const { return _list.begin(); }
+  const_iterator end() const { return _list.end(); }
+  bool empty() const { return _map.empty(); }
+};
+
 template <typename T> class SetVector {
   std::set<T> m_set;
   std::vector<T> m_vec;
-
+  typedef typename std::set<T>::iterator set_it;
+  typedef typename std::set<T>::const_iterator set_const_it;
+  typedef typename std::vector<T>::iterator vector_it;
+  typedef typename std::vector<T>::const_iterator vector_const_it;
  public:
   SetVector() {}
   void clear() {
@@ -80,7 +123,7 @@ template <typename T> class SetVector {
     m_set.insert(t);
     m_vec.push_back(t);
   }
-  auto find(const T &key) {
+  set_it find(const T &key) {
     if (m_set.count(key) <= 0)
       return end();
     for (auto it = begin(); it != end(); it++)
@@ -88,7 +131,7 @@ template <typename T> class SetVector {
         return it;
     return end();
   }
-  auto find(const T &key) const {
+  set_const_it find(const T &key) const {
     if (m_set.count(key) <= 0)
       return end();
     for (auto it = begin(); it != end(); it++)
@@ -112,16 +155,16 @@ template <typename T> class SetVector {
   size_t size() const { return m_vec.size(); }
 
   //  / Get an iterator to the beginning of the SetVector.
-  auto begin() { return m_vec.begin(); }
+  vector_it begin() { return m_vec.begin(); }
 
   //  / Get a const_iterator to the beginning of the     SetVector.
-  auto begin() const { return m_vec.begin(); }
+  vector_const_it begin() const { return m_vec.begin(); }
 
   //  / Get an iterator to the end of the SetVector.
-  auto end() { return m_vec.end(); }
+  vector_it end() { return m_vec.end(); }
 
   //  / Get a const_iterator to the end of the SetVector.
-  auto end() const { return m_vec.end(); }
+  vector_const_it end() const { return m_vec.end(); }
   template <class InputIterator> void insert(InputIterator S, InputIterator E) {
     InputIterator I = S;
     while (I != E) {
@@ -193,6 +236,7 @@ class CSageCodeGen {
     return dim != ((size_t)UNKNOWN_SIZE) && dim != ((size_t)POINTER_SIZE) &&
            dim != ((size_t)EMPTY_SIZE);
   }
+  bool IsEmptySize(size_t dim) { return dim == ((size_t)EMPTY_SIZE); }
 
  public:
   explicit CSageCodeGen(SgProject *sg = nullptr);
@@ -234,10 +278,11 @@ class CSageCodeGen {
   std::string get_location(void *sg_node, bool simple, bool line_num) const;
   std::string get_location_from_metadata(void *sgNode);
   int IsMixedCAndCPlusPlusDesign();
+  int IsPureCDesign();
   int IsFromInputFile(void *sgnode) const;
   int IsFromMerlinSystemFile(void *sgnode);
   int IsSystemFunction(void *sg_func);
-
+  bool IsMerlinInternalIntrinsic(string func_name);
   bool isWithInCppFile(void *sgnode);
   bool isCppLinkage(void *sgnode);
   bool isWithInHeaderFile(void *sgnode);
@@ -250,27 +295,30 @@ class CSageCodeGen {
   void *GetOriginalNode(void *sg_node);
   /********* VARIABLE *****************/
   /**** Get variable info *****/
-  std::vector<std::string> GetOpenCLName();
+  std::vector<std::string> GetOpenCLName(bool is_intel = false);
   void *GetVariableSymbol(void *sg_var_ref_);  //  NOT SUGGESTED, needreview
-  void *GetVariableInitializedName(void *sg_var_ref_decl);
+  void *GetVariableInitializedName(void *sg_var_ref_decl) const;
   void *GetVariableDefinition(void *decl_, void *name_ = nullptr);
   void GetVariableInitializedName(void *sg_var_ref_decl,
-                                  std::vector<void *> *vec_var);
+                                  std::vector<void *> *vec_var) const;
   void *find_interface_by_name(const std::string &var, void *kernel);
-  void *find_variable_by_name(
-      const std::string &var, void *pos,
-      bool inclusive_scope =
-          false);  //  ZP: 20160901 new function for pragma analysis
+  void *
+  find_variable_by_name(const std::string &var, void *pos,
+                        bool inclusive_scope = false);  //  ZP: 20160901
+                                                        // new function for
+                                                        // pragma analysis
   bool check_valid_field_name(const std::string &field_name, void *pos);
+  void *find_field_by_name(const string &field_name, void *pos);
   void *GetInitializer(void *sg_name);
   void *GetInitializerOperand(void *sg_input);
   void *GetVariableDecl(void *sg_var_ref_or_name);
   void *GetVariableDefinitionByName(void *sg_var);
   void *get_actual_var_decl_by_ref(void *var_ref);
-  void *TraceVariableInitializedName(
-      void *sg_name);  //  trace up cross function calls
+  void *
+  TraceVariableInitializedName(void *sg_name);  //  trace up cross function
+                                                // calls
   std::string GetVariableTypeName(void *sg_var_);
-  std::string GetVariableName(void *sg_var_, bool qualified = false);
+  std::string GetVariableName(void *sg_var_, bool qualified = false) const;
   bool IsStatic(void *sg_decl_);
   bool IsMutable(void *sg_decl_);
   bool IsExtern(void *sg_decl_);
@@ -282,7 +330,8 @@ class CSageCodeGen {
   int IsGlobalInitName(void *sg_node);
   int IsArgumentInitName(void *sg_node);
   bool IsMemberVariable(void *var_initname);
-
+  bool IsUnionMemberVariable(void *var_init);
+  bool IsInputOutputGlobalVariable(void *var_init);
   /***** updated variable info ******/
   void SetTypetoVar(void *var_init_name, void *sg_type);
   void SetInitializer(void *sg_name, void *sg_init);
@@ -314,6 +363,9 @@ class CSageCodeGen {
   bool UnSupportedMemberFunction(void *func);
   bool IsMemberFunction(void *func_decl);
   bool IsConstMemberFunction(void *func_decl);
+  bool IsAssignOperator(void *func_decl);
+  bool IsConstructor(void *func_decl);
+  bool IsDefaultConstructor(void *func_decl);
   int IsSupportedFunction(void *func_decl);
   int IsVarArgFunction(void *func_decl);
 
@@ -334,10 +386,12 @@ class CSageCodeGen {
   void *GetFuncDeclByRef(void *sg_func_ref);
   void *GetFuncDeclByName(const std::string &sFuncName, int require_body = 1);
   void *GetFuncDeclByDefinition(void *func_def);
+  void *GetDefiningFuncDecl(void *func_decl, void *sg_func_call_,
+                            bool ignore_static);
   void GetAllFuncDeclToCall(const std::set<void *> &funcs,
                             std::map<void *, std::vector<void *>> *func2calls);
-  void *
-  GetAssociatedFuncDeclByCall(void *sg_func_call_) const;  //  not suggested
+  void *GetAssociatedFuncDeclByCall(void *sg_func_call_) const;  //  not
+                                                                 // suggested
   std::vector<void *> GetAllFuncDeclByCall(void *sg_func_call_,
                                            int require_body = 0);
   std::vector<void *> GetAllFuncDeclByName(const std::string &sFuncName,
@@ -345,8 +399,8 @@ class CSageCodeGen {
   std::vector<void *> GetAllFuncCallByName(const std::string &sFuncName);
   std::vector<void *>
   GetAllFuncDecl();  //  get all the function decls with body
-  std::vector<void *>
-  GetAllFuncDecl(void *func_decl);  //  get all the function decls
+  std::vector<void *> GetAllFuncDecl(void *func_decl);  //  get all the function
+                                                        // decls
   //  pointed to the same
   //  functions
 
@@ -367,14 +421,14 @@ class CSageCodeGen {
 #if USED_CODE_IN_COVERAGE_TEST
   void *GetUniqueFuncDeclByCall(void *sg_call);
 #endif
-  void *GetFuncDefinitonByDecl(void *sg_func_decl);
+  void *GetFuncDefinitionByDecl(void *sg_func_decl);
   void *GetUniqueFuncDecl(void *sg_func_decl);
 
   /****** update function info **********/
   int SetFuncName(void *sg_decl_, const std::string &new_name);
   void SetFuncReturnType(void *sg_func_decl_, void *new_type);
   int SetFuncBody(void *sg_func_decl_, void *sg_body);
-  void insert_param_to_decl(void *decl, void *name, bool to_all_decl = false);
+  void insert_param_to_decl(void *decl, void *name, bool to_all_decl = true);
 
   /***** create function info **********/
   void *CreateFuncParamList(const std::vector<void *> &param_list,
@@ -384,7 +438,7 @@ class CSageCodeGen {
                        bool definition, void *bindNode);
   void *CreateFuncDecl(void *ret_type, const std::string &sFuncName,
                        std::vector<void *> fp_list, void *sg_scope_,
-                       bool definitio, void *bindNode);
+                       bool definition, void *bindNode);
   void *CreateFuncDecl(const std::string &sType, const std::string &sFuncName,
                        void *sg_fp_list_, void *sg_scope_, bool definition,
                        void *bindNode);
@@ -397,7 +451,14 @@ class CSageCodeGen {
                        std::vector<std::string> vec_name,
                        std::vector<void *> vec_type, void *sg_scope,
                        bool definitione, void *bindNode);
-
+  void *CreateMemberFuncDecl(const std::string &sType,
+                             const std::string &sFuncName,
+                             std::vector<void *> fp_list, void *sg_scope_,
+                             bool definition, void *bindNode);
+  void *CreateMemberFuncDecl(void *ret_type, const std::string &sFuncName,
+                             std::vector<void *> fp_list, void *sg_scope_,
+                             bool definition, void *bindNode);
+  void *CreateFunctionRef(void *func_decl);
   /******** clone function info ***********/
   void *CloneFuncDecl(void *func_decl, void *sg_scope, bool definition = true,
                       bool bind = true);
@@ -421,9 +482,9 @@ class CSageCodeGen {
   cloneFuncWith(SgFunctionDeclaration *, SgScopeStatement *, SgType *,
                 const std::string &, const std::vector<SgInitializedName *> &,
                 const std::map<SgInitializedName *, SgInitializedName *> &);
-  void *CopyFuncDecl(
-      void *sg_decl_,
-      const std::string &sFuncName);  //  only support function with no argument
+  void *CopyFuncDecl(void *sg_decl_,
+                     const std::string &sFuncName);  //  only support function
+                                                     // with no argument
 
   /******* FUNCTION CALL ********************/
   /****** get function call info ****************/
@@ -437,6 +498,9 @@ class CSageCodeGen {
   std::vector<void *> GetFuncCallParamList(void *sg_func_call_);
   int GetFuncCallParamIndex(void *sg_arg);
   int GetFuncCallParamIndexRecur(void *sg_arg);
+  bool is_xilinx_channel_read(void *call, void **ref);
+  bool is_xilinx_channel_write(void *call, void **ref);
+  bool is_xilinx_channel_access(void *call, string member_name, void **ref);
   int is_altera_channel_read(void *ref);
   int is_altera_channel_write(void *ref);
   int is_altera_channel_call(void *call);
@@ -451,7 +515,12 @@ class CSageCodeGen {
     void *sg_decl = GetAssociatedFuncDeclByCall(sg_call);
     return nullptr == sg_decl;
   }
+  // check whether the call is xilinx ap_int/ap_fixed/stream member function
+  // call
   int IsSupportedMemberFunctionCall(void *func_call);
+  // check whether the callee is xilinx ap_int/ap_fixed/stream member
+  // function or extended friend function
+  int IsSupportedMerlinSystemFunctionCall(void *func_call);
 
   bool IsAssertFailCall(void *assert_call);
   bool IsMemCpy(void *sg_call);
@@ -495,23 +564,34 @@ class CSageCodeGen {
                        const t_func_call_path &call_path);
   int IsomorphicLoops(void *one_loop, void *other_loop);
   bool isDom(void *pos1, void *pos2);
-
+  bool InSameUnconditionalScope(void *pos1, void *pos2);
   /*******   PRAGMA *************************/
   /********** get pragma info **************/
   std::string GetPragmaString(void *sg_node_);
 #if USED_CODE_IN_COVERAGE_TEST
   std::string GetPragmaStringAbove(void *pos);
 #endif
+  map<void *, string> GetVariablesUsedByPragma(void *pragma, bool *report_err,
+                                               string *msg, bool numeric_only);
+  SetVector<void *> GetVariablesUsedByPragmaInScope(void *scope,
+                                                    bool numeric_only);
+  bool IsPragmaWithDeadVariable(void *pragma);
   void *GetPragmaAbove(void *pos);
+  bool func_has_dataflow(void *func_decl);
+  bool IsDataflowProcess(void *func_decl);
+  bool IsDataflowScope(void *scope);
+  bool IsParallelLoop(void *loop);
   /********* update pragma info ************/
   void *SetPragmaString(void *sg_node_,
                         const std::string &str);  //  return the new pointer
+  bool is_numeric_option(std::string attr, bool numeric_only);
   /********  create pragma info ***********/
   void *CreatePragma(const std::string &sPragma, void *sg_scope_,
                      void *bindNode = nullptr);
 
   /********** EXPRESSION & STATEMENT *************/
   /********* get expression info *************************/
+  void detachFromParent(SgNode *node);
   int IsSimpleAggregateInitializer(void *sg_initer_);
   void *GetAggrInitializerFromCompoundLiteralExp(void *sg_exp);
   void parse_aggregate(void *scope = nullptr);
@@ -522,7 +602,7 @@ class CSageCodeGen {
   void *GetFirstFuncDeclInGlobal(void *pos);
   void *GetFirstNonTrivalStmt(void *blk);
   void *GetLastNonTrivalStmt(void *blk);
-  bool IsConditionStmt(void *stmt);
+  bool IsUnderConditionStmt(void *stmt);
   void *GetSwitchStmtSelector(void *sg_switch);
   void GetExprList(void *sg_exp_list, std::vector<void *> *vec_expr);
   int GetExprListFromCommaOp(void *sg_comma, std::vector<void *> *vec_expr);
@@ -539,12 +619,13 @@ class CSageCodeGen {
 
   void *GetChildStmt(void *sg_scope_, size_t i);
   std::vector<void *> GetChildStmts(void *sg_scope_);
-  size_t GetChildStmtNum(void *sg_scope_);
+  size_t GetChildStmtNum(void *sg_scope_) const;
   // idx == numeric_limits<size_t>::max() for not found
   size_t GetChildStmtIdx(void *sg_scope_, void *sg_child_);
-  void
-  GetChildStmtList(void *sg_scope_,
-                   SgStatementPtrList *stmt_lst);  //  add by Yuxin, May 26 2015
+  void GetChildStmtList(
+      void *sg_scope_,
+      SgStatementPtrList *stmt_lst) const;  //  add by Yuxin, May 26
+                                            // 2015
   //  Mo, not suggested
   bool GetChildTaskIdx(void *sg_scope_, void *sg_child_, int *index, int HGT);
   //  void GetForStmt(void * sg_scope, std::vector<void*>* vecLoops) ;
@@ -607,6 +688,12 @@ class CSageCodeGen {
   int IsCompareOp(void *sg_node);
   int IsCompareOp(int opcode);
   int GetCompareOp(void *sg_exp);
+  int GetExpressionOp(void *sg_exp_) const {
+    auto sg_exp = isSgExpression(static_cast<SgNode *>(sg_exp_));
+    if (nullptr == sg_exp)
+      return 0;
+    return sg_exp->variant();
+  }
   int IsIncrementOp(void *sg_node);
   int IsIncrementOp(int op_code);
   int GetBinaryOperationFromCompoundAssignOp(void *exp);
@@ -630,6 +717,7 @@ class CSageCodeGen {
   int standardize_pntr_ref_from_array_ref(void *sg_ref, void *pos = nullptr);
 
   void *splitExpression(void *from, std::string newName = "");
+  void splitInlinedAggregatedDefinition(void *scope);
   /************* create const expression **************/
   void *CreateConst(void *val_, int const_type = V_SgIntVal,
                     void *bindNode = nullptr);
@@ -659,7 +747,9 @@ class CSageCodeGen {
   void *CreateConditionExp(void *op0, void *op1, void *op2,
                            void *bindNode = nullptr);
   void *CreateExp(int opcode, void *op0 = nullptr, void *op1 = nullptr,
-                  int unary_mode_ = 0, void *bindNode = nullptr);
+                  int unary_mode_ = 0, void *bindNode = nullptr,
+                  bool check_floating = true);
+  vector<void *> CreatePntrExp(void *var_init);
   void *CreateStmt(int stmt_type, void *op0_ = nullptr, void *op1_ = nullptr,
                    void *op2_ = nullptr, void *op3_ = nullptr,
                    void *op4_ = nullptr, void *op5_ = nullptr,
@@ -683,11 +773,10 @@ class CSageCodeGen {
   /********* TYPE  ****************************************************/
 
   /*************** get type or class info  *****************************/
-  int IsScalarType(void *sg_name) const;
+  int IsScalarType(void *sg_name);
   int IsStructureType(void *sg_type_) const;
   int IsUnionType(void *sg_type_) const;
   int IsEnumType(void *sg_type_) const;
-  int IsAnonymousStructureType(void *sg_type_) const;
   int IsAnonymousType(void *sg_type_) const;
   int IsAnonymousName(const std::string &) const;
   int IsClassType(void *sg_type_) const;
@@ -700,6 +789,9 @@ class CSageCodeGen {
   int IsConstType(void *sg_type) const;
   int IsVolatileType(void *sg_type) const;
   int IsGeneralCharType(void *sg_type) const;
+  bool IsStructureWithAlignedScalarData(void *sg_type);
+  bool IsStructureWithAlignedScalarData(void *sg_type, int *total_bitwidth,
+                                        int *aligned_bitwidth);
   int get_type_unit_size(void *sg_type, void *pos);
   int get_type_size(void *sg_type, void *pos, bool report = true);
   void *get_type_size_exp(void *sg_type, void *pos, bool report);
@@ -739,8 +831,12 @@ class CSageCodeGen {
   int IsAnonymousTypeDecl(void *sg_decl) const;
   int IsTypeDecl(void *sg_decl) const;
 
+  void GetPointerInStruct(void *struct_type, vector<void *> *vec_pointer);
   int ContainsUnSupportedType(void *sg_type_, void **unsupported_type,
-                              std::string *reason, bool intel_flow);
+                              std::string *reason, bool intel_flow,
+                              bool is_return = false,
+                              std::string *string_type = nullptr,
+                              bool has_array_pointer_parent = false);
   void GetAllUnSupportedType(void *sg_type_,
                              std::set<std::pair<void *, std::string>> *res);
   void *ContainsClassType(void *sg_type_);
@@ -765,9 +861,6 @@ class CSageCodeGen {
   std::string GetTypeNameByType(void *sg_class_type,
                                 bool qualified = false) const;
   std::string GetStringByType(void *sg_type) const;
-  void *GetBaseTypeRecur(void *sg_type) const {
-    return isSgType(static_cast<SgNode *>(sg_type))->findBaseType();
-  }
   void *GetOrigTypeByTypedef(void *sg_type,
                              bool skip_anonymous_struct = false) const;
 
@@ -782,23 +875,25 @@ class CSageCodeGen {
   int IsBuiltinType(const std::string &sType) const {
     return m_builtin_types.count(sType) > 0;
   }
-  void *GetBaseType(void *sg_type, bool skip_anonymous_struct = true) const {
-    return trace_base_type(sg_type, skip_anonymous_struct);
+  void *GetBaseType(void *sg_type, bool skip_anonymous_type) const {
+    return trace_base_type(sg_type, skip_anonymous_type);
   }
   void *GetBaseTypeOneLayer(void *sg_type) const;
 
   void *GetElementType(void *sg_type) const;
 
-  void GetClassMembers(void *sg_class_type, std::vector<void *> *members);
-  void GetClassMembersByDecl(void *sg_class_decl, std::vector<void *> *members);
+  void GetClassMembers(void *sg_class_type_or_decl,
+                       std::vector<void *> *members);
   void *GetClassMemberByName(const std::string &s_var, void *sg_class_type);
-  void GetClassDataMembers(void *sg_class_type,
+  void GetClassDataMembers(void *sg_class_type_or_decl,
                            std::vector<void *> *data_members);
-  void GetClassDataMembersByDecl(void *sg_class_decl,
-                                 std::vector<void *> *data_members);
-  void GetClassFunctionMembers(void *sg_class_type,
+  void GetClassNonStaticDataMembers(void *sg_class_type_or_decl,
+                                    std::vector<void *> *data_members);
+  void GetClassFunctionMembers(void *sg_class_type_or_decl,
                                std::vector<void *> *func_members);
-
+  vector<void *> GetDataMemberExp(void *var_decl, void *mem_init);
+  vector<void *> GetInheritances(void *sg_class_decl);
+  void *GetDefaultConstructor(void *sg_class_type);
   /***** update type *******************************/
   void *RemoveConstType(void *sg_type, void *pos, bool *changed);
   void *RemoveConstVolatileType(void *sg_type_, void *pos);
@@ -811,6 +906,7 @@ class CSageCodeGen {
   void *GetTypeByString(const std::string &sType);
   void *ArrayToPointerRecur(void *sg_type, bool skip_typedef = false);
   void RegisterType(const std::string &sType, void *pos = nullptr);
+  //  Order of vec_dim: Left to right dimensions
   void *CreateArrayType(void *base_type, std::vector<size_t> vec_dim,
                         void *bindNode = nullptr);
   void *CreatePointerType(void *base_type, void *bindNode = nullptr);
@@ -860,18 +956,23 @@ class CSageCodeGen {
   int get_loop_trip_count(void *for_loop, int64_t *trip_count,
                           int64_t *trip_count_ub = nullptr);
   int get_loop_trip_count(void *for_loop, void **trip_count);
-  int get_loop_trip_count_from_pragma(void *for_loop,
-                                    int64_t *trip_count);
+  int get_loop_trip_count_from_pragma(void *loop, int64_t *trip_count);
   //  Across-Function Analysis
   int get_loop_nest_in_scope(void *sg_pos, void *sg_scope,
                              std::vector<void *> *sg_loops);
+  int get_loop_nest_in_scope(
+      void *sg_pos, void *sg_scope,
+      std::vector<std::pair<void *, void *>> *sg_loops_with_last);
   int get_loop_nest_in_scope(void *sg_pos, void *sg_scope,
                              const t_func_call_path &func_path,
                              std::vector<void *> *sg_loops);
+  int get_loop_nest_in_scope(
+      void *sg_pos, void *sg_scope, const t_func_call_path &func_path,
+      std::vector<std::pair<void *, void *>> *sg_loops_with_last);
   int get_loop_nest_in_scope(void *sg_pos, void *sg_scope,
                              const t_func_call_path &func_path,
-                             std::vector<void *> *sg_loops,
-                             std::set<void *> *visited);
+                             std::vector<std::pair<void *, void *>> *sg_loops,
+                             std::set<void *> *visited, bool reverse);
 
   int hasLabelWithGoto(void *for_loop);
 
@@ -893,10 +994,10 @@ class CSageCodeGen {
   int ParseOneForLoop(void *sg_for_stmt, void **var, void **start, void **end,
                       void **step, void **cond_op, void **body, int *ulimit);
 
-  int GetLoopStepValueFromExpr(
-      void *step_expr, int64_t *value,
-      void **sg_value =
-          nullptr);  //  return 0 if not available (e.g. not constant)
+  int GetLoopStepValueFromExpr(void *step_expr, int64_t *value,
+                               void **sg_value = nullptr);  //  return 0 if not
+                                                            // available (e.g.
+                                                            // not constant)
   int is_innermost_for_loop(void *for_loop);
   void *GetSpecifiedLoopByPragma(void *pragma_decl);
   int is_perfectly_nested(void *sg_loop);
@@ -1007,8 +1108,6 @@ class CSageCodeGen {
   void *TraceUpToBasicBlock(void *sg_pos) const {
     return TraceUpByTypeCompatible(sg_pos, V_SgBasicBlock);
   }
-  //  youxiang 20161004 handle condition statement of if-statement
-  void *TraceUpToInsertPosition(void *sg_pos);
   //  trace up to either for- while- or dowhile- loop statement
   void *TraceUpToLoopScope(void *sg_pos, bool exclusive = false);
 
@@ -1024,13 +1123,16 @@ class CSageCodeGen {
                                const t_func_trace_up &pFunc, void *pFuncArg);
   void TraceUpFuncArgSource(void *sg_scope, void *sg_func_decl_arg,
                             std::vector<void *> *vec_source);
+  void *TraceUpToNonFloating(void *n);
 
   /******************* get specific nodes ********************/
+  bool has_ref_in_scope(void *var_init, void *scope);
   void get_ref_in_scope(void *var_init, void *scope, std::vector<void *> *refs,
                         bool skip_access_intrinsic = false,
                         bool is_preorder = true);
   void get_ref_in_scope_recursive(void *var_init, void *scope,
-                                  std::vector<void *> *vec_refs);
+                                  std::vector<void *> *vec_refs,
+                                  bool skip_access_intrinsic = false);
 
   void get_ref_in_scope(void *var_init, void *scope,
                         const t_func_call_path &call_path,
@@ -1072,7 +1174,7 @@ class CSageCodeGen {
   std::vector<void *>  //  defs of an init_name , at a certain position
   GetVarDefbyPosition(void *init_name, void *pos, int simple_iterator = 0);
 
-  //  youxiang support pointer converative and accurate analysis
+//  youxiang support pointer converative and accurate analysis
 #if USED_CODE_IN_COVERAGE_TEST
   std::vector<void *>  //  defs of an init_name , at a certain position
   GetVarDefbyPosition_v2(void *init_name, void *pos);
@@ -1084,12 +1186,15 @@ class CSageCodeGen {
 #endif
 
   void set_function_for_liveness(void *func_decl);
-  void get_liveness_in(
-      void *sg_pos,
-      std::vector<void *> *ret);  //  get the init_name of the alive variables
-  void get_liveness_out(
-      void *sg_pos,
-      std::vector<void *> *ret);  //  get the init_name of the alive variables
+  void get_liveness_in(void *sg_pos, std::vector<void *> *ret);  //  get the
+                                                                 // init_name of
+                                                                 // the alive
+                                                                 // variables
+  void get_liveness_out(void *sg_pos,
+                        std::vector<void *> *ret);  //  get the
+                                                    // init_name of
+                                                    // the alive
+                                                    // variables
 
   void get_liveness_for_loop(void *sg_loop, std::vector<void *> *in,
                              std::vector<void *> *out);
@@ -1102,17 +1207,20 @@ class CSageCodeGen {
   //  ZP: 20150818
   //  only work for variable ref or pntr ref
   int is_write_conservative(void *ref, bool recursive = true);
-  int is_write_conservative(void *ref, void **new_def, bool recursive = true);
+  int is_write_conservative(void *ref, void **new_def, bool is_address,
+                            bool recursive);
   //  int is_read_conservative(void *ref) ;
-  int has_read_conservative(
-      void *ref, bool recursive = true);  //  no matter if there is write
+  int has_read_conservative(void *ref,
+                            bool recursive = true);  //  no matter if
+                                                     // there is write
   int has_write_conservative(void *ref);  //  no matter if there is read
   //  array_ref: A (in A[e1][e2])
   //  cross-function
   bool array_ref_has_write_conservative(void *array_ref);
   bool array_ref_has_read_conservative(void *array_ref);
-  int array_ref_is_write_conservative(
-      void *array_ref);  //  0 for read, 1 for write, 2 for read & write
+  int array_ref_is_write_conservative(void *array_ref);  //  0 for read, 1 for
+                                                         // write, 2 for read &
+                                                         // write
   //  ZP: standard function for both scalar and pointer, conservative,
   //  cross-function
   int has_write_in_scope(void *array, void *scope);
@@ -1130,6 +1238,20 @@ class CSageCodeGen {
   int has_lvalue_ref_in_scope(void *scope, void *name,
                               std::vector<void *> *v_ret_ref = nullptr);
   int is_lvalue(void *ref);
+  int check_access_out_of_bound(void *sg_init, void *scope,
+                                const vector<size_t> &depths,
+                                bool *is_exact = nullptr,
+                                string *msg = nullptr);
+  int check_access_write_out_of_bound(void *sg_init, void *scope,
+                                      const vector<size_t> &depths,
+                                      bool *empty_access = nullptr,
+                                      bool *is_exact = nullptr,
+                                      string *msg = nullptr);
+  int check_access_read_out_of_bound(void *sg_init, void *scope,
+                                     const vector<size_t> &depths,
+                                     bool *empty_access = nullptr,
+                                     bool *is_exact = nullptr,
+                                     string *msg = nullptr);
   /******************* movable test *****************************************/
   int is_movable_test(void *exp, void *move_to, void *move_from = nullptr);
 
@@ -1164,7 +1286,9 @@ class CSageCodeGen {
                                    bool simplify_idx = true,
                                    int adjusted_array_dim = -1,
                                    int include_class = 0);
-
+  // check whether the array element is accessed from variable reference
+  // 'sg_ref' within scope 'scope'
+  bool is_access_array_element(void *sg_ref, void *scope);
   void parse_pntr_ref_by_func_call(void *sg_ref, void **sg_func, void **sg_pntr,
                                    std::vector<void *> *sg_indexes,
                                    int *pointer_dim, void *pos = nullptr);
@@ -1173,7 +1297,9 @@ class CSageCodeGen {
       void *sg_ref, void **sg_array, void **sg_pntr, void **sg_base_type,
       std::vector<void *> *sg_indexes, int *pointer_dim, void *pos = nullptr);
   //  array_ref: A (in A[e1][e2])
-  int is_array_ref_full_dimension(void *array_ref);
+  int is_array_ref_full_dimension(void *array_ref, void **sg_array,
+                                  void **sg_pntr, vector<void *> *sg_indexes,
+                                  int *pointer_dim);
 
   //  stable, call parse_pntr_ref_new
   void *get_array_from_pntr(void *pntr);
@@ -1184,9 +1310,9 @@ class CSageCodeGen {
   //  stable
   int get_pntr_pntr_dim(void *pntr);
   int get_pntr_init_dim(void *pntr);
-  //
+//
 
-  //  The simple version of parse_pntr_ref_by_array_ref
+//  The simple version of parse_pntr_ref_by_array_ref
 #if USED_CODE_IN_COVERAGE_TEST
   void get_pntr_ref_by_array_ref(void *sg_ref, void **sg_array, void **sg_pntr,
                                  std::vector<void *> *sg_indexes);
@@ -1212,7 +1338,7 @@ class CSageCodeGen {
   int analyze_type_with_new_and_malloc(void *sg_array, void *sg_scope,
                                        std::vector<size_t> *vecSizes);
 
-  bool is_assign_to_pntr(void *parent, void **var_name, void **value);
+  bool parse_assign_to_pntr(void *parent, void **var_name, void **value);
   int parse_assign(void *parent, void **var_name, void **value);
 
   int get_ref_dimension(void *ref, std::vector<void *> *indexes);
@@ -1221,6 +1347,7 @@ class CSageCodeGen {
 
   int IsInScope(void *sg_node, void *sg_scope);
   bool IsScopeBreak(void *sg_break, void *sg_scope);
+  bool IsScopeContinue(void *sg_break, void *sg_scope);
   //  The major function for induction analysis, call GetSingleAssignExpr
   //  [Notice] The input should be original in the AST node, because def/use
   //  result is used in analysis
@@ -1239,7 +1366,7 @@ class CSageCodeGen {
   int is_located_in_scope(void *sg_pos, void *sg_scope,
                           const std::list<t_func_call_path> &vec_paths);
 
-  /*********************  call path analysis *****************************/
+/*********************  call path analysis *****************************/
 #if USED_CODE_IN_COVERAGE_TEST
   void filter_vec_node_in_path(const t_func_call_path &fn_path,
                                const std::vector<void *> &vec_in);
@@ -1266,7 +1393,7 @@ class CSageCodeGen {
   //  YX: support simple pointer alias
   void get_all_func_path_in_scope_int_v2(void *array, void *range_scope,
                                          std::list<t_func_call_path> *vec_paths,
-                                         std::set<void *> *visited);
+                                         std::set<void *> *visited, bool top);
   int is_located_in_path(void *sg_pos, t_func_call_path fn_path);
 
   //  for array variable reference
@@ -1274,8 +1401,7 @@ class CSageCodeGen {
   int is_included_in_path(const std::pair<void *, void *> &call_site,
                           t_func_call_path fn_path);
 
-  int is_all_var_declared_in_scope(void *sg_pos, void *sg_scope,
-                                   t_func_call_path func_path);
+  int any_var_located_in_scope(void *term, void *scope);
 
   void *get_call_in_path(void *func_decl, const t_func_call_path &call_path);
 
@@ -1323,8 +1449,12 @@ class CSageCodeGen {
                   bool before_label = true);
   void InsertAfterStmt(void *sg_stmt_, void *sg_before_);
   void InsertStmtAvoidLabel(void *sg_stmt_, void **sg_before_);
-  void PrependChild(void *sg_scope_, void *sg_child_);
+  void PrependChild(void *sg_scope_, void *sg_child_,
+                    bool insert_after_pragma = false);
   void AppendChild(void *sg_scope_, void *sg_child_);
+  void myStatementInsert(SgStatement *target, SgStatement *newstmt, bool before,
+                         bool allowForInit = false);
+
   /*****************  Copy ******************************/
   void *CopyChild(void *sg_node);
   void *CopyStmt(void *sg_stmt_, bool passMajor = false);
@@ -1340,13 +1470,15 @@ class CSageCodeGen {
   void SetLabelName(void *sg_label, const std::string &new_name);
   void ReplaceChild(void *sg_old_, void *sg_new_,
                     bool replace_prep_info = true);
+
+  bool IsSupportedReplaceExpressionParent(void *exp_parent);
   void ReplaceExp(void *sg_old_, void *sg_new_, bool keepOldExp = true);
   void ReplaceExpWithStmt(void *sg_old_);
   void ReplaceStmt(void *sg_old, void *sg_new, bool replace_prep_info = true) {
     ReplaceChild(sg_old, sg_new, replace_prep_info);
   }
 
-  void *replace_var_refs_in_type(void *sg_type_, void *pos);
+  void replace_var_refs_in_type(void *sg_type_, void *pos);
   void replace_floating_var_refs(void *scope);
   //  replace the variable reference in a scope
   void replace_variable_references_in_scope(void *sg_init_old,
@@ -1364,6 +1496,7 @@ class CSageCodeGen {
   }
   void RemoveLabel(void *sg_node);
   int RemoveRedundantContinueStmt(void *body);
+  void myRemoveStatement(SgStatement *stmt);
   /***********   Complex operation **********************/
   bool dead_stmts_removal(void *scope);
   bool remove_dead_parameters(void **func_decl);
@@ -1371,11 +1504,13 @@ class CSageCodeGen {
   int add_missing_brace(void *scope);
   int add_label(const std::string &label_name, void *loop);
   void remove_double_brace(void *sg_scope = nullptr);
+  bool simplify_pointer_access(void *scope);
   void remove_brace_after_label(void *sg_scope = nullptr);
   int add_label_scope(void *sg_loop);
   bool replace_sizeof(void *scope);
   void clean_empty_aggregate_initializer(void *sg_scope);
-  void clean_implict_conversion_operator(void *sg_scope);
+  bool clean_implict_conversion_operator(void *sg_scope);
+  void recover_hls_namespace_prefix(void *scope);
   void function_outline(void *node_stmt, void **func_call, void **func_decl,
                         const std::string &func_name_prefix,
                         bool add_number_suffix, bool remove_dead_code,
@@ -1383,11 +1518,22 @@ class CSageCodeGen {
   /*********** PREPROCESS DIRECTIVE *******************************/
 
   //  processing pragma with token
-  void GetTokens(std::vector<std::string> *tokens, const std::string &str);
+  void GetTokens(std::vector<std::string> *tokens, const std::string &str,
+                 const char *sep = nullptr);
   void MergeTokens(const std::vector<std::string> &tokens, std::string *ret);
   void ReplacePragmaTokens(
       void *scope,
-      const std::unordered_map<std::string, std::string> &def_directive_map_);
+      const std::unordered_map<std::string, std::string> &def_directive_map_,
+      const char *sep = nullptr);
+  void RewritePragmaTokens(
+      void *pragma,
+      const std::unordered_map<std::string, std::string> &def_directive_map_,
+      const char *sep = nullptr);
+  string FindTokenAttribute(const std::vector<string> &tokens,
+                            const std::string &str);
+  void BuildPragmaCache();
+  set<void *> get_variable_used_in_pragma(void *pragma);
+  set<void *> get_pragma_related_to_variable(void *sg_var);
 
   //  insert macros, can be used any text, but no syntax meaning (not recommend)
   void AddDirectives(const std::string &sDirective, void *sg_node_before_,
@@ -1426,14 +1572,21 @@ class CSageCodeGen {
   int IsBasicBlock(void *sg_node) const {
     return isSgBasicBlock(static_cast<SgNode *>(sg_node)) != 0;
   }
+  bool IsSingleChild(void *sg_node) const {
+    void *parent = GetParent(sg_node);
+    if (IsBasicBlock(parent) != 0 && GetChildStmtNum(parent) == 1) {
+      return true;
+    }
+    return false;
+  }
   int IsScopeStatement(void *sg_node) const {
     return isSgScopeStatement(static_cast<SgNode *>(sg_node)) != 0;
   }
-  int IsPragma(void *sg_node) const {
+  bool IsPragma(void *sg_node) const {
     return isSgPragma(static_cast<SgNode *>(sg_node)) != 0;
   }
 
-  int IsPragmaDecl(void *sg_node) const {
+  bool IsPragmaDecl(void *sg_node) const {
     return isSgPragmaDeclaration(static_cast<SgNode *>(sg_node)) != 0;
   }
 
@@ -1470,7 +1623,7 @@ class CSageCodeGen {
   int IsCompoundInitializer(void *sg_node) const {
     return isSgCompoundInitializer(static_cast<SgNode *>(sg_node)) != 0;
   }
-  int IsConstructorInitializer(void *sg_node) const {
+  bool IsConstructorInitializer(void *sg_node) const {
     return isSgConstructorInitializer(static_cast<SgNode *>(sg_node)) != 0;
   }
   int IsDesignatedInitializer(void *sg_node) const {
@@ -1590,7 +1743,7 @@ class CSageCodeGen {
     return isSgTemplateClassDeclaration(static_cast<SgNode *>(sg_node)) != 0;
   }
 
-  int IsVariableDecl(void *sg_node) const {
+  bool IsVariableDecl(void *sg_node) const {
     return isSgVariableDeclaration(static_cast<SgNode *>(sg_node)) != 0;
   }
 
@@ -1664,6 +1817,9 @@ class CSageCodeGen {
   int IsUnsignedIntType(void *sg_type) const {
     return isSgTypeUnsignedInt(static_cast<SgNode *>(sg_type)) != nullptr;
   }
+  bool IsComplexType(void *type) const {
+    return isSgTypeComplex(static_cast<SgNode *>(type)) != nullptr;
+  }
   int IsVoidType(void *sg_type) const {
     return isSgTypeVoid(static_cast<SgNode *>(sg_type)) != nullptr;
   }
@@ -1722,7 +1878,7 @@ class CSageCodeGen {
            isSgTypeSignedLongLong(sg_type);
   }
   int IsIntegerTypeRecur(void *sg_type) const {
-    return IsIntegerType(GetBaseTypeRecur(sg_type));
+    return IsIntegerType(GetBaseType(sg_type, true));
   }
 
   int IsEnumVal(void *sg_exp) const {
@@ -1749,6 +1905,7 @@ class CSageCodeGen {
   int IsAssignOp(void *sg_exp) const {
     return isSgAssignOp(static_cast<SgNode *>(sg_exp)) != nullptr;
   }
+  int IsAssignOp(int opcode) const { return V_SgAssignOp == opcode; }
   bool IsGeneralAssignOp(void *sg_exp, void **left_exp, void **right_exp);
 
   int IsCompoundAssignOp(void *sg_exp) const {
@@ -1772,6 +1929,7 @@ class CSageCodeGen {
   int IsUnaryOp(void *sg_exp) const {
     return isSgUnaryOp(static_cast<SgNode *>(sg_exp)) != nullptr;
   }
+  int IsUnaryOp(int opcode) const { return opcode == V_SgAssignOp; }
   int IsBinaryOp(void *sg_exp) const {
     return isSgBinaryOp(static_cast<SgNode *>(sg_exp)) != nullptr;
   }
@@ -1829,6 +1987,25 @@ class CSageCodeGen {
 
   /************************** Misc
    * **********************************************/
+  inline int IsNumberString(string str) {
+    int flag = 0;
+    for (size_t i = 0; i < str.length(); i++) {
+      if (str[i] >= '0' && str[i] <= '9') {
+      } else {
+        flag = 1;
+      }
+    }
+    if (flag == 1) {
+      return 0;
+    }
+    return 1;
+  }
+  int IsStructElement(string str, void *kernel);
+  vector<void *> GetUniqueInterfacePragma(void *sg_init, CMarsIrV2 *mars_ir);
+  vector<string> GetUniqueInterfaceAttribute(void *sg_init, string attribute,
+                                             CMarsIrV2 *mars_ir);
+  void replace_depth(string depth_all, void *pragma, void *kernel,
+                     CMarsIrV2 *mars_ir);
   /********************** reverse arguments ********************************/
   void InsertStmt_v1(void *sg_ref_, void *sg_stmt_, bool avoid_pragma = false) {
     InsertStmt(sg_stmt_, sg_ref_, avoid_pragma);
@@ -1842,8 +2019,9 @@ class CSageCodeGen {
   void AppendChild_v1(void *sg_child_, void *sg_scope_) {
     AppendChild(sg_scope_, sg_child_);
   }
-  void PrependChild_v1(void *sg_child_, void *sg_scope_) {
-    PrependChild(sg_scope_, sg_child_);
+  void PrependChild_v1(void *sg_child_, void *sg_scope_,
+                       bool insert_after_pragma = false) {
+    PrependChild(sg_scope_, sg_child_, insert_after_pragma);
   }
   //  Output
   void GeneratePDF();
@@ -1851,19 +2029,35 @@ class CSageCodeGen {
   void sanity_check();
   //  floating node means the temporarily generated code that has no been insert
   //  to AST
-  int is_floating_node(void *sg_node) const;
+  bool is_floating_node(void *sg_node) const;
 
-  //  get valid name
-  bool check_declaration(void *kernel_decl, const std::string &arr_name);
-  void get_valid_local_variable_name(void *func_decl, std::string *var_name);
-  bool check_declaration_in_global_scope(void *global_scope,
-                                         const std::string &var_name);
-  void get_valid_global_variable_name(void *global_scope,
-                                      std::string *var_name);
+  //  check name is visible in the current position 'sg_pos', including symbol
+  //  defined in sub scope(s) and its parent scope(s)
+  bool check_name_visible_in_position(void *sg_pos, const std::string &name);
+  void get_valid_name(void *sg_pos, std::string *name);
 
+  //  check name is visible in the current function 'kernel_decl', including
+  //  symbol defined in sub scope(s) if 'check_sub_scope' is true and its parent
+  //  scope(s)
+  bool check_name_visible_in_function(void *kernel_decl,
+                                      const std::string &name,
+                                      bool check_sub_scope);
+  void get_valid_local_name(void *func_decl, std::string *name);
+
+  //  check name is visible in the global scope 'global_scope', including symbol
+  //  defined in sub scope(s) if 'check_sub_scope' is true
+  bool check_name_visible_in_global_scope(void *global_scope,
+                                          const std::string &name,
+                                          bool check_sub_scope);
+  void get_valid_global_name(void *global_scope, std::string *name);
+  // check name is visible within the funciton 'kernel_decl', including symbol
+  // defined in sub scope(s) but not its parent scope
+  bool check_name_declared_within_function(void *kernel_decl,
+                                           const std::string &name);
   void get_loop_nest_from_ref(void *curr_loop, void *ref,
                               std::set<void *> *loops,
-                              bool include_while = false);
+                              bool include_while = false,
+                              bool skip_scope = false);
   std::string legalizeName(const std::string &name);
 
   void PropagatePragma(void *var, void *scope, const std::string &new_var,
@@ -1873,21 +2067,36 @@ class CSageCodeGen {
   //  Across-Function Analysis
   int get_surrounding_control_stmt(void *sg_pos, void *sg_scope,
                                    std::vector<void *> *sg_loops_ifs);
-  int get_surrounding_control_stmt(void *sg_pos, void *sg_scope,
-                                   const t_func_call_path &func_path,
-                                   std::vector<void *> *sg_loops_ifs,
-                                   std::set<void *> *visited);
+  int get_surrounding_control_stmt(
+      void *sg_pos, void *sg_scope,
+      std::vector<std::pair<void *, void *>> *sg_loops_if_with_lasts);
+  int get_surrounding_control_stmt(
+      void *sg_pos, void *sg_scope, const t_func_call_path &func_path,
+      std::vector<std::pair<void *, void *>> *sg_loops_if_with_lasts,
+      std::set<void *> *visited, bool reverse);
 
   void set_kernel_attribute(void *func_decl, const std::string &attr,
                             const std::string &val);
   //  Add by Yuxin
-  SgVariableSymbol *getSymbolFromName(void *scope, const std::string &varStr);
+  SgVariableSymbol *getVariableSymbolFromName(void *scope,
+                                              const std::string &varStr);
+
+  //  Look up variable declaration from the innermost scope to global scope
+  //  according to variable name
   SgInitializedName *getInitializedNameFromName(void *scope,
-                                                const std::string &varStr);
+                                                const std::string &varStr,
+                                                bool recursive_field);
+  // check whether there is any kind of symbol in the scope, such as variable,
+  // function, namespace, class, enum, label, etc
+  bool CheckSymbolExits(void *scope, const std::string &varStr);
+
   std::string GetSgPntrArrName(void *expr);
   bool IsIncludeVar(void *expr, void *var);
   //  //////////////////////////////  /
   std::vector<void *> get_var_decl_in_for_loop(void *sg_for_loop);
+  void *reset_array_from_array(void *array, void *base_type,
+                               const vector<size_t> &nSizes, void *from_array,
+                               void *bindNode);
   void *create_for_loop_for_reset_array(void *var_int, void *base_type,
                                         const std::vector<size_t> &nSizes,
                                         void *tmp_var, void *bindNode);
@@ -1901,10 +2110,9 @@ class CSageCodeGen {
 #if USED_CODE_IN_COVERAGE_TEST
   int is_single_def_expression(void *exp, void *pos);
 #endif
-  void
-  InitRenameList(const std::map<std::string, std::vector<std::string>> &
-                     mapRefRenameList);  //  std::map<std::string port,
-                                         //  std::vector<string ref_name_list> >
+  void InitRenameList(const std::map<std::string, std::vector<std::string>>
+                          &mapRefRenameList);  //  std::map<std::string port,
+  //  std::vector<string ref_name_list> >
   void ResetRefRenameList();
   std::string GetRefRenameAndInc(const std::string &port);
 
@@ -1961,10 +2169,10 @@ class CSageCodeGen {
   SgInitializedName *CreateVariable_v1(SgName sVar, void *sg_type,
                                        void *bindNode = nullptr);
 
-  //  ////////////////////////  /
-  //
+//  ////////////////////////  /
+//
 
-  //  arr_name[ivar0+offset0][ivar1+offset1][ivar2+offset2]...
+//  arr_name[ivar0+offset0][ivar1+offset1][ivar2+offset2]...
 #if USED_CODE_IN_COVERAGE_TEST
   void *CreateSimpleArrayRef(void *array_var_ref,
                              const std::vector<void *> &vec_var,
@@ -2021,7 +2229,7 @@ class CSageCodeGen {
   void *copy_node_and_replace_reference(void *sg_node, void *sg_init,
                                         void *new_exp);
 #endif
-
+  bool detect_user_for_loop_burst(void *ref, void *pntr, CMarsIr *mars_ir);
   void reset_cls_syms();
 
   void reset_var_syms();
@@ -2143,7 +2351,7 @@ class CSageCodeGen {
       const std::map<std::string, std::vector<std::string>> &mapArray2Dim,
       const std::map<std::string, bool> &mapFuncVisited);
 
-  //  Outline
+//  Outline
 #if USED_CODE_IN_COVERAGE_TEST
   void *outline(void *sg_bb_, const std::string &func_name,
                 void **sg_new_decl = nullptr);
@@ -2152,19 +2360,21 @@ class CSageCodeGen {
   void InsertPipelinePragma(void *scope,
                             const std::vector<std::string> &vec_bus_e1);
 
-  std::string
-  GetMallocVarName(void *exp);  //  , int& elem_size, int& total_size);
+  std::string GetMallocVarName(void *exp);  //  , int& elem_size, int&
+                                            // total_size);
 
   //  vendor library analysis
-  int IsXilinxAPIntType(void *type) const;
-  int IsXilinxAPFixedType(void *type) const;
-
+  bool IsStdComplexType(void *type) const;
+  bool IsXilinxStreamType(void *type) const;
+  bool IsXilinxAPIntType(void *type) const;
+  bool IsXilinxAPFixedType(void *type) const;
+  bool IsXilinxIntrinsic(void *fn_decl) const;
   bool isCanonicalForLoop(void *loop, void **ivar = nullptr,
                           void **lb = nullptr, void **ub = nullptr,
                           void **step = nullptr, void **body = nullptr,
                           bool *hasIncrementalIterationSpace = nullptr,
                           bool *isInclusiveUpperBound = nullptr);
-
+  int GetLoopStep(void *loop, int64_t *nStep);
   bool IsAssignStatement(void *stmt, void **left_exp, void **right_exp);
 
   int GetOperatorOp(void *decl);
@@ -2175,15 +2385,15 @@ class CSageCodeGen {
   bool IsAPIntOp(void *expr, void **left_exp, void **right_exp, int *op);
 
  public:  //  for debug
-  string
-  _p(void *sgnode,
-     int len = 0) const;  //  brief form of UnparseToString, with type info
+  string _p(void *sgnode,
+            int len = 0) const;  //  brief form of UnparseToString,
+                                 // with type info
   std::string _up(void *sgnode, int len = 0) const {
     return UnparseToString(sgnode, len);
   }
   void *_pa(void *sgnode) const;  //  brief form of GetParent()
   void dump_all_func();
-  std::string UnparseToString(void *sg_node, int len = 0) const;
+  string UnparseToString(void *sg_node, int len = 0) const;
   std::string GetASTTypeString(void *sg_node) const {
     return (static_cast<SgNode *>(sg_node)->class_name());
   }
@@ -2202,6 +2412,10 @@ class CSageCodeGen {
     s_write_in_scope_cache.clear();
     s_write_in_scope_fast_cache.clear();
     s_read_in_scope_cache.clear();
+  }
+  void reset_pragma_cache() {
+    s_variable_to_pragma_cache.clear();
+    s_pragma_to_variable_cache.clear();
   }
   std::map<SgNode *, HistoryMarker> *getHistories() { return &histories; }
   const std::map<SgNode *, HistoryMarker> &getHistories() const {
@@ -2233,7 +2447,7 @@ class CSageCodeGen {
   // TODO(youxiang): This should return an unsigned.
   int get_bitwidth_from_type_str(const std::string &str_type,
                                  bool report = true);
-
+  int get_sizeof_arbitrary_precision_integer(int bitwidth) const;
   bool isMultiAssignHaveSideEffect(void *node);
   bool SplitMultiAssign(void *scope);
   void *convertAssign(void *node);
@@ -2241,6 +2455,8 @@ class CSageCodeGen {
                            void *type_b);
 
   std::string GetSafeNewVarName(const std::string &prefix, void *scope);
+
+  void removeSpaces(string *stringIn);
 
  protected:
 #if USED_CODE_IN_COVERAGE_TEST
@@ -2295,12 +2511,14 @@ class CSageCodeGen {
   std::map<std::string, std::vector<std::string>>
       m_mapRefRenameList;  //  std::map<std::string port,
                            //  std::vector<std::string ref_name> >
-  std::map<std::string, int>
-      m_mapRefRenameIdx;  //  std::map<std::string port, int
-                          //  current_ref_idx_of_the_port>;
+  std::map<std::string, int> m_mapRefRenameIdx;  //  std::map<std::string port,
+                                                 // int
+  //  current_ref_idx_of_the_port>;
 
   std::map<void *, std::vector<void *>> s_func_call_cache;
   std::map<void *, std::vector<void *>> s_var_ref_cache;
+  std::map<void *, std::set<void *>> s_variable_to_pragma_cache;
+  std::map<void *, std::set<void *>> s_pragma_to_variable_cache;
   std::map<void *, void *> s_func_decl_cache;
   std::map<void *, void *> s_global_decl_cache;
   std::map<void *, void *> s_type_decl_cache;
@@ -2313,6 +2531,7 @@ class CSageCodeGen {
   std::map<std::pair<void *, void *>, bool> s_read_in_scope_fast_cache;
   std::set<void *> s_def_use_cache;
   std::map<std::pair<void *, int>, std::vector<void *>> s_g_funcs_cache;
+  std::map<std::string, std::set<void *>> s_g_func_name_cache;
   std::map<std::pair<void *, void *>, bool> s_location_cache;
   std::map<std::string, std::string> s_message_metadata_cache;
   std::map<SgNode *, HistoryMarker> histories;
@@ -2347,6 +2566,16 @@ class CSageCodeGen {
   void init_range_analysis();
 
  private:
+  void TraceUpFuncCallsGeneric(void *sg_scope, void *sg_func_decl_arg,
+                               const t_func_trace_up &pFunc, void *pFuncArg,
+                               set<void *> *visited);
+  int get_type_dimension_by_ref(void *sg_varref_or_pntr, void **sg_array,
+                                void **basic_type,
+                                std::vector<size_t> *vecSizes,
+                                std::set<void *> *visited_funcs);
+
+  int IsCompatibleType(void *sg_type1, void *sg_type2, void *pos, bool top,
+                       bool strict);
   void get_all_candidates_from_loop_init(void *sg_for_loop_,
                                          std::vector<void *> *iv_cand,
                                          std::vector<void *> *iv_cand_init,
@@ -2397,12 +2626,7 @@ class CSageCodeGen {
 
   SgExpression *getRootOfExpression(SgExpression *n);
 
-  void myStatementInsert(SgStatement *target, SgStatement *newstmt, bool before,
-                         bool allowForInit = false);
-
   void replaceExpressionWithExpression(SgExpression *from, SgExpression *to);
-
-  void myRemoveStatement(SgStatement *stmt);
 
   SgAssignOp *convertInitializerIntoAssignment(SgAssignInitializer *init);
 };
@@ -2419,7 +2643,8 @@ void all_pragma_parse_whole(
     std::string sPragma, std::string *p_sFilter, std::string *p_sCmd,
     std::map<std::string,
              std::pair<std::vector<std::string>, std::vector<std::string>>>
-        *p_mapParam);
+        *p_mapParam,
+    vector<string> *p_mapKey);
 
 class CNameConflictSolver {
  public:

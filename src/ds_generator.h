@@ -30,16 +30,8 @@
 #include <json/json.h> 
 #include <boost/any.hpp>
 
-//#include "xml_parser.h"
-//#include "cmdline_parser.h"
-//#include "file_parser.h"
-//
-//#include "mars_opt.h"
-//#include "PolyModel.h"
-//#include "tldm_annotate.h"
 #include "codegen.h"
-//#include "program_analysis.h"
-//
+#include "input_checker.h"
 #include "mars_ir.h"
 #include "mars_ir_v2.h"
 #include "dse_utils.h"
@@ -188,14 +180,14 @@ class DsGenerator {
     : m_ast(ast), 
       p_top_func_(pTopFunc),
       options_(options) {
-    mars_ir_.get_mars_ir(&m_ast, p_top_func_, true);
+    mars_ir_.get_mars_ir(&m_ast, p_top_func_, options, true);
     mars_ir_v2_.build_mars_ir(&m_ast, p_top_func_);
     loop_index_ = 0;
     fout.open("ds_info.json");
     is_fine_grain_ = options_.get_option("-fgrain") == "on";
-    cout << "=====\n";
-    cout << options_.get_option("-fgrain") << endl;
-    cout << "=====\n";
+    // cout << "=====\n";
+    // cout << options_.get_option("-fgrain") << endl;
+    // cout << "=====\n";
   }
   virtual ~DsGenerator() {
     for (auto item: map_scope_pragmas_) {
@@ -219,6 +211,19 @@ class DsGenerator {
  // public for unit testing purpose.
  // should be private when release.
  public:
+  inline void build_mars_ir(bool check_pragma, bool pragma_in_loop,
+                               bool build_node) {
+    //  build Mars IR
+    mars_ir_.clear();
+    mars_ir_.get_mars_ir(&m_ast, p_top_func_, options_, build_node, false,
+                       pragma_in_loop);
+  }
+  inline void clear_mars_ir() {
+    mars_ir_.clear();
+  }
+  void CanonicalizeIR();
+  bool CanonicalizeLoop();
+  bool StandardizeLoop();
   void TraverseLoopDesignSpace(FnHandler fn, void *stmt, string loop_id); 
   bool UpdateUserSpecifiedPragma(void *scope_stmt, 
                                  PragmaType pragma_ty,
@@ -247,8 +252,8 @@ class DsGenerator {
   PragmaMap map_scope_pragmas_;
   CMarsIr mars_ir_;
   CMarsIrV2 mars_ir_v2_;
-  CInputOptions &options_;
   void *p_top_func_;
+  CInputOptions &options_;
   int loop_index_;
   bool is_fine_grain_;
   std::ofstream fout;

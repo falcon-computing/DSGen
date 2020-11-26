@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_INTERFACE_TRANSFORM_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_INTERFACE_TRANSFORM_H_
 #include <vector>
@@ -30,16 +39,13 @@ int access_range_gen_top(CSageCodeGen *codegen, void *pTopFunc,
 int remove_simple_pointer_alias_top(CSageCodeGen *codegen, void *pTopFunc,
                                     const CInputOptions &option);
 int constant_propagation_top(CSageCodeGen *codegen, void *pTopFunc,
-                             const CInputOptions &option);
+                             const CInputOptions &option,
+                             bool assert_generation);
 void bool2char_top(CSageCodeGen *codegen, void *pTopFunc,
                    const CInputOptions &options);
 int check_non_static_pointer_interface_top(CSageCodeGen *codegen,
                                            void *pTopFunc,
                                            const CInputOptions &options);
-int DetectPointerCompareInterfaceTop(CSageCodeGen *codegen, void *pTopFunc,
-                                     const CInputOptions &options);
-int DetectPointerTypeCastInterfaceTop(CSageCodeGen *codegen, void *pTopFunc,
-                                      const CInputOptions &options);
 int DetectMultiDimPointerInterfaceTop(CSageCodeGen *codegen, void *pTopFunc,
                                       const CInputOptions &options);
 //  helper function

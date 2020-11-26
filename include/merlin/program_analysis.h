@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 //  ///////////////////////////////////  /
 //  Program Analysis Functionalities
 //  E.g. Linear expression analysis,
@@ -17,10 +26,15 @@
 #include <tuple>
 #include <vector>
 #include <list>
+#include <memory>
 #include "file_parser.h"
 #include "rose.h"
 #include "codegen.h"
 #include "common.h"
+
+using std::shared_ptr;
+using std::unique_ptr;
+using std::unordered_map;
 
 class CSageCodeGen;
 typedef CSageCodeGen CMarsAST_IF;
@@ -260,11 +274,12 @@ class CMarsExpression {
     reduce();
   }
   std::vector<std::vector<int64_t>> get_coeff_range_simple();
-  int has_coeff_range_simple();
+  int has_coeff_range_simple() const;
 
   CMarsRangeExpr get_range() const;
   bool has_range() const;
   int any_var_located_in_scope(void *scope);
+  int any_var_located_in_scope_except_loop_iterator(void *scope);
   int is_movable_to(void *pos);
 
   void operator=(const CMarsExpression &op);
@@ -285,11 +300,15 @@ class CMarsExpression {
                                    const CMarsExpression &op2);
   friend CMarsExpression operator/(const CMarsExpression &op1, int64_t op2);
 
+  friend CMarsExpression operator%(const CMarsExpression &op1,
+                                   const CMarsExpression &op2);
+  friend CMarsExpression operator%(const CMarsExpression &op1, int64_t op2);
   friend CMarsExpression operator<<(const CMarsExpression &op1,
                                     const CMarsExpression &op2);
   friend CMarsExpression operator>>(const CMarsExpression &op1,
                                     const CMarsExpression &op2);
-  friend int divisible(const CMarsExpression &op1, int64_t op2);
+  friend int divisible(const CMarsExpression &op1, int64_t op2,
+                       bool check_range);
   friend int operator==(const CMarsExpression &op1, const CMarsExpression &op2);
   friend int operator!=(const CMarsExpression &op1, const CMarsExpression &op2);
   friend int operator==(const CMarsExpression &op1, int64_t op2);
@@ -400,6 +419,7 @@ class CMarsRangeExpr {
 
   void set_empty(CMarsAST_IF *ast = nullptr);
 
+  int any_var_located_in_scope_except_loop_iterator(void *scope);
   int any_var_located_in_scope(void *scope);
   int is_movable_to(void *pos);
   int has_var(void *var);
@@ -431,6 +451,7 @@ class CMarsRangeExpr {
 
  public:
   friend CMarsRangeExpr operator-(const CMarsRangeExpr &op);
+  friend bool operator==(const CMarsRangeExpr &op1, const CMarsRangeExpr &op2);
   friend CMarsRangeExpr operator+(const CMarsRangeExpr &op1,
                                   const CMarsRangeExpr &op2);
   friend CMarsRangeExpr operator-(const CMarsRangeExpr &op1,
@@ -465,7 +486,9 @@ class CMarsRangeExpr {
   int64_t get_const_lb() const;
   int64_t get_const_ub() const;
 
-  int IsConstant() const { return get_const_lb() == get_const_ub(); }
+  int IsConstant() const {
+    return is_const_bound() && get_const_lb() == get_const_ub();
+  }
 
   CMarsExpression GetConstant();
 
@@ -640,19 +663,175 @@ class CMarsAccess {
   void *m_pos;
 };
 
+struct RangeInfo {
+  const void *sgnode;
+  CMarsRangeExpr range;
+  size_t acc_size;
+  t_func_call_path func_path;
+  RangeInfo(const void *sgnode, const CMarsRangeExpr &range, size_t acc_size)
+      : sgnode(sgnode), range(range), acc_size(acc_size) {}
+  explicit RangeInfo(const void *sgnode, const CMarsRangeExpr &range)
+      : RangeInfo(sgnode, range, 1) {}
+};
+
+using range = CMarsRangeExpr;
+using list_range = std::list<CMarsRangeExpr>;
+using list_rinfo = std::list<RangeInfo>;
+using vec_range = std::vector<CMarsRangeExpr>;
+using vec_rinfo = std::vector<RangeInfo>;
+using vec_list_range = std::vector<list_range>;
+using vec_list_rinfo = std::vector<list_rinfo>;
+using map2vec_list_range = linked_map<void *, shared_ptr<vec_list_range>>;
+using map2vec_list_rinfo = linked_map<void *, shared_ptr<vec_list_rinfo>>;
+
+struct Result {
+  shared_ptr<vec_list_rinfo> vl_rinfo;
+
+  explicit Result(shared_ptr<vec_list_rinfo> vl_rinfo) : vl_rinfo(vl_rinfo) {}
+  explicit Result(size_t num_dims)
+      : Result(std::make_shared<vec_list_rinfo>(num_dims)) {}
+
+  void extend_1d(shared_ptr<Result> r2, size_t d) {
+    vl_rinfo->at(d).insert(vl_rinfo->at(d).end(), r2->vl_rinfo->at(d).begin(),
+                           r2->vl_rinfo->at(d).end());
+  }
+
+  void merge(shared_ptr<Result> r2) {
+    for (size_t d = 0; d < r2->vl_rinfo->size(); ++d) {
+      extend_1d(r2, d);
+    }
+  }
+};
+
+struct MyAST {
+  string type;
+  const void *sgnode;
+  // -1:unitialized, 0:non_exact_condition, 1: exact_condition
+  int true_branch_is_exact_condition;
+  int false_branch_is_exact_condition;
+  size_t trip_count;
+  shared_ptr<Result> result;
+  vector<shared_ptr<MyAST>> body;
+  vector<shared_ptr<MyAST>> orelse;
+  const void *true_body;
+  const void *false_body;
+  MyAST(const string &type, void *sgnode, shared_ptr<Result> result)
+      : type(type), sgnode(sgnode), true_branch_is_exact_condition(-1),
+        false_branch_is_exact_condition(-1), trip_count(1), result(result),
+        true_body(nullptr), false_body(nullptr) {}
+  MyAST(const string &type, void *sgnode) : MyAST(type, sgnode, nullptr) {}
+};
+
+class ArrayRangeAnalysis {
+ private:
+  using DFS_cache =
+      std::map<std::pair<void *,                // ptr to SgFunctionDeclaration
+                         void *>,               // ptr to SgInitializedName
+               std::pair<shared_ptr<Result>,    // for read access
+                         shared_ptr<Result>>>;  // for write access
+  DFS_cache m_cache;
+  CMarsAST_IF *m_ast;
+
+  // must keep
+  range m_flatten_range_w;
+  range m_flatten_range_r;
+  vec_range m_range_w;
+  vec_range m_range_r;
+  int64_t m_access_size;
+  bool m_eval_access_size;
+  bool m_check_access_bound;
+
+  void *get_interesting_upper(void *node, void *root);
+  bool child_of(void *subnode, void *node);
+  bool child_of_if_true_body(void *node, void *ifstmt);
+  shared_ptr<MyAST> create_tree(void *range_scope,
+                                const map2vec_list_rinfo &range_for);
+  shared_ptr<Result> postorder(shared_ptr<MyAST> tree, const void *range_scope,
+                               int dim_size);
+  void try_merge(shared_ptr<vec_list_rinfo> ranges, int dim);
+  range try_merge(shared_ptr<list_range> ranges);
+  void union_group_range_exact(shared_ptr<vec_list_rinfo> rinfos,
+                               const void *range_scope, const void *upper,
+                               int dim, size_t upper_trip_count = 1);
+  range union_group_range(shared_ptr<vec_list_rinfo> rinfos,
+                          const void *range_scope, int dim);
+  shared_ptr<Result> Union(const map2vec_list_rinfo &range_for,
+                           void *range_scope, int dim_size);
+  std::pair<std::shared_ptr<Result>, std::shared_ptr<Result>>
+  DFS_analyze(void *range_scope, void *array, void *ref_scope);
+  void analyze(void *array, void *range_scope, void *ref_scope);
+
+  // base range analysis
+  bool equal_range(const list_rinfo &one_rinfos,
+                   const list_rinfo &other_rinfos);
+  void analyze_ref(void *curr_ref, void *range_scope, void *ref_scope, int dim,
+                   bool all_dimension_size_known, size_t total_flatten_size,
+                   int data_unit_size, const vector<size_t> &sg_sizes,
+                   shared_ptr<vec_list_rinfo> r_range,
+                   shared_ptr<vec_list_rinfo> w_range, void **new_scope,
+                   void **new_range_scope, void **new_array,
+                   void **new_func_call, int *new_pointer_dim);
+
+  void propagate_range(void *curr_ref, void *range_scope,
+                       const vec_list_rinfo &r1, const vec_list_rinfo &w1,
+                       int dim, int new_pointer_dim,
+                       shared_ptr<vec_list_rinfo> w_range,
+                       shared_ptr<vec_list_rinfo> r_range);
+  void get_range_with_offset(const list_rinfo &old_range,
+                             const CMarsRangeExpr &offset,
+                             list_rinfo *new_range);
+  void substitute_parameter_atom_in_range(
+      void *array, shared_ptr<vec_list_rinfo> read_range,
+      shared_ptr<vec_list_rinfo> write_range, void *func_decl, void *func_call,
+      void *range_scope);
+  void check_exact_flag_for_loop(const void *loop, const void *range_scope,
+                                 shared_ptr<vec_list_rinfo> range_group);
+  void set_non_exact_flag(shared_ptr<vec_list_rinfo> range_group, int dim);
+
+  void get_array_dimension_size(void *array, size_t *dim, int *data_unit_size,
+                                int *dim_fake, bool *all_dimension_size_known,
+                                size_t *total_flatten_size,
+                                vector<size_t> *sg_sizes);
+
+  bool is_empty_list_range(const list_rinfo &ranges);
+
+  void intersect_with_access_range_info(void *array, void *ref_scope,
+                                        void *range_scope);
+
+  void use_access_range_info(void *array, void *ref_scope, void *range_scope,
+                             shared_ptr<vec_list_rinfo> read_ranges,
+                             shared_ptr<vec_list_rinfo> write_ranges);
+
+  bool check_local_or_infinite_range(shared_ptr<vec_list_rinfo> ranges, int dim,
+                                     void *range_scope);
+
+  size_t merge_access_size(size_t one_access_size, size_t other_access_size);
+
+ public:
+  ArrayRangeAnalysis(void *array, CMarsAST_IF *ast, void *ref_scope,
+                     void *range_scope, bool eval_access_size,
+                     bool check_access_bound);
+
+  vec_range GetRangeExprWrite() { return m_range_w; }
+  vec_range GetRangeExprRead() { return m_range_r; }
+
+  range GetFlattenRangeExprWrite() { return m_flatten_range_w; }
+  range GetFlattenRangeExprRead() { return m_flatten_range_r; }
+  int has_read();
+  int has_write();
+
+  std::string print();
+  std::string print_s();
+
+  int64_t get_access_size() { return m_access_size; }
+};
+
 class CMarsArrayRangeInScope {
  public:
-  CMarsArrayRangeInScope(void *array, CMarsAST_IF *ast, void *ref_scope,
-                         void *range_scope, bool eval_access_size,
-                         bool check_access_bound);
   CMarsArrayRangeInScope(void *array, CMarsAST_IF *ast,
                          const std::list<t_func_call_path> &vec_call_path,
                          void *ref_scope, void *range_scope,
                          bool eval_access_size, bool check_access_bound);
-#if KEEP_UNUSED
-  CMarsArrayRangeInScope(CMarsAST_IF *ast, void *ref, void *range_scope,
-                         bool eval_access_size, bool check_access_bound);
-#endif
   std::vector<CMarsRangeExpr> GetRangeExprWrite() { return m_range_w; }
   std::vector<CMarsRangeExpr> GetRangeExprRead() { return m_range_r; }
 

@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_HISTORY_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_HISTORY_H_
 
@@ -92,7 +101,6 @@ class HistoryMarker {
   void setOrgIdentifier(const std::string &org_identifier) {
     this->org_identifier = org_identifier;
   }
-
   void setParallel(bool isParallel) { this->parallel = isParallel; }
 
   int64_t getAppliedIndex() { return this->applied_index; }

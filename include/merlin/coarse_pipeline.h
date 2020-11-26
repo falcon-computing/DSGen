@@ -1,3 +1,13 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights
+ *reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 
 #include <map>
@@ -12,10 +22,14 @@
 
 using MarsProgramAnalysis::CMarsRangeExpr;
 
+// Yuxin: Dec/5/2019, remove hard code
+#define LIVENESS_IN 0
+#define LIVENESS_OUT 1
+
 typedef std::vector<SgStatement *> stmt_table_vec;
 
 struct CVarNode {
-  SgInitializedName *var;
+  void *var;
   int appear;
   int first_appear;
   int last_appear;
@@ -43,7 +57,7 @@ struct CVarNode {
   }
 };
 
-typedef std::map<std::string, CVarNode> var_table_map;
+typedef std::map<string, CVarNode> var_table_map;
 enum wr_type { NA = 0, RaW = 1, WaW = 2, WaR = 3, RaR = 4 };
 class CGraphNode : public stmt_table_vec {
  public:
@@ -86,7 +100,7 @@ bool dependency_analysis(CSageCodeGen *codegen, void *pTopFunc,
 
 void print_table(node_table_map *node_table);
 
-bool GetNodeDependence(CSageCodeGen *codegen, CMirNode *bNode,
+bool GetNodeDependence(CSageCodeGen *codegen, CMarsIr *mars_ir, CMirNode *bNode,
                        node_table_map *node_table, CGraphNode *write_node,
                        CGraphNode *read_node, std::set<void *> var_init_new_set,
                        int num_w, int num_r);
@@ -111,29 +125,31 @@ bool parse_ref_normal(CSageCodeGen *codegen, void *pTopFunc, CMarsIr *mars_ir,
                       SgNode *stmt, CGraphNode *graph_node, CMirNode *bNode,
                       CMirNode *fNode, var_table_map *var_table, int node_i);
 
-bool isCurrentLoopIterator(CSageCodeGen *codegen, SgInitializedName *arr_var,
-                           SgExpression *ref,
-                           SgFunctionDeclaration *kernel_decl);
+bool isLoopIterator(CSageCodeGen *codegen, void *loop_scope, void *arr_var,
+                    void *ref);
 
 //  ///////  / Range analysis
 
-bool test_range_legality(CSageCodeGen *codegen, CMirNode *bNode,
+bool test_range_legality(CSageCodeGen *codegen, CMarsIr *mars_ir, void *sg_loop,
                          node_table_map *node_table, void *sg_scope_w,
                          void *sg_scope_r, void *sg_array, int num_w, int num_r,
-                         std::string *msg, std::set<void *> var_init_new_set);
+                         std::string *msg, std::set<void *> var_init_new_set,
+                         vector<size_t> *lb_vec, vector<size_t> *ub_vec,
+                         bool *bound_check);
 
-bool check_range_flatten(CSageCodeGen *codegen, void *sg_loop,
+bool check_range_flatten(CSageCodeGen *codegen, CMarsIr *mars_ir, void *sg_loop,
                          node_table_map *node_table,
                          const CMarsRangeExpr &flatten_mr_r,
                          const CMarsRangeExpr &flatten_mr_w, void *sg_array,
                          int num_w, int num_r, std::string *msg);
 
-bool check_range_multiple(CSageCodeGen *codegen, void *sg_loop,
-                          node_table_map *node_table,
+bool check_range_multiple(CSageCodeGen *codegen, CMarsIr *mars_ir,
+                          void *sg_loop, node_table_map *node_table,
                           const std::vector<CMarsRangeExpr> &vec_mr_r,
                           const std::vector<CMarsRangeExpr> &vec_mr_w,
                           void *sg_array, int num_w, int num_r,
-                          std::string *msg);
+                          std::string *msg, vector<size_t> *lb_vec,
+                          vector<size_t> *ub_vec, bool *bound_check);
 
 bool union_access_range(CSageCodeGen *codegen, node_table_map *node_table,
                         CMarsRangeExpr *mr_merged, bool *merge_tag,
@@ -169,11 +185,7 @@ void reportBusConflict(CMirNode *lnode, CSageCodeGen *codegen);
 void reportNonCanonical(void *stmt, CMirNode *lnode, CSageCodeGen *codegen);
 void reportLegalityCheck(CSageCodeGen *codegen, CMirNode *lnode, void *sg_array,
                          const std::string &reason, bool local);
-void reportMultiDeclare(void *stmt, CMirNode *lnode, CSageCodeGen *codegen);
-
 void reportOneStatement(CMirNode *lnode, CSageCodeGen *codegen);
-
-//  static const std::string VIVADO_str ("HLS");
 
 void pragma_propagate(CSageCodeGen *codegen, CMarsIr *mars_ir,
                       std::map<void *, std::vector<void *>> existing_table,
@@ -209,3 +221,8 @@ void build_node_functions(CSageCodeGen *codegen, CMirNode *bNode,
                           map<string, map<string, void *>> *arg_map_kernel,
                           node_table_map *node_table, int stage_sum,
                           int64_t incr, const string &kernel_str);
+bool check_range_bound(CSageCodeGen *codegen, CMarsIr *mars_ir,
+                       CMarsRangeExpr *m_range, vector<size_t> *lb_size,
+                       vector<size_t> *ub_size);
+void partition_pragma_gen_xilinx(CSageCodeGen *codegen, void *arr_init, int dim,
+                                 int factor);

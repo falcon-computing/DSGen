@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MEMORY_COALESCING_XILINX_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MEMORY_COALESCING_XILINX_H_
 #include <map>
@@ -41,12 +50,17 @@ class MemoryCoalescingXilinx {
       : m_ast(Codegen), mTopFunc(pTopFunc), mOptions(Options), mBitWidth(512),
         mBitWidthSpecified(false), mMaxDimension(5), mNaiveHLS(false),
         mEnableCDesign(false), mEnableSubOptimal(false),
-        m_length_threshold(1024), mCpp_design(false), mWideBusFlag(false) {
+        m_length_threshold(WIDE_BUS_LENGTH_THRESHOLD), mCpp_design(false),
+        mWideBusFlag(false) {
     init(Codegen);
   }
   bool run();
 
   ~MemoryCoalescingXilinx();
+
+  void get_opt_bitwidth(int *opt_bitwidth, bool *specified_bitwdith, void *arg,
+                        int bitwidth, const vector<void *> &vec_pragma,
+                        bool report);
 
  private:
   bool update_interface(CMirNode *fNode);
@@ -68,7 +82,8 @@ class MemoryCoalescingXilinx {
 
   bool updateFunctionInterface(void *func_def);
 
-  void *getLargeBitWidthType(void *orig_type, int opt_bitwidth);
+  void *getLargeBitWidthType(void *orig_type, int opt_bitwidth, int bitwidth,
+                             void *pos);
 
   void *getLargeBitWidthTypeWithoutModifier(void *orig_type, int opt_bitwidth);
 
@@ -78,8 +93,7 @@ class MemoryCoalescingXilinx {
                                          void *orig_memcpy_call);
   bool isSupportedType(void *base_type);
 
-  std::string StripSignnessInType(const std::string &org_type,
-                                  bool replace_space);
+  std::string StripSignnessInType(void *base_type, bool replace_space);
 
   void *AddCastToStripSignness(void *address_exp, void *base_type,
                                const MemcpyInfo &info);
@@ -101,8 +115,6 @@ class MemoryCoalescingXilinx {
 
   void *createBuffer(void *base_type, void *sg_scope, void *func_decl);
 
-  bool check_declaration(void *func_decl, std::string var_name);
-
   void detect_access_in_paralleled_loop(void *ref, ArgumentInfo *info);
 
   void auto_cache_for_coalescing();
@@ -120,23 +132,14 @@ class MemoryCoalescingXilinx {
   std::map<void *, std::vector<ArgumentInfo>> mFunc2Info;
   std::set<void *> mDead_func_calls;
 
-  const std::vector<std::string> m_supported_types{"int",
-                                                   "unsigned int",
-                                                   "signed int",
-                                                   "char",
-                                                   "signed char",
-                                                   "unsigned char",
-                                                   "short",
-                                                   "signed short",
-                                                   "unsigned short",
-                                                   "long",
-                                                   "signed long",
-                                                   "unsigned long",
-                                                   "long long",
-                                                   "signed long long",
-                                                   "unsigned long long",
-                                                   "float",
-                                                   "double"};
+  const std::vector<std::string> m_supported_types{
+      "int",       "unsigned int",     "signed int",
+      "char",      "signed char",      "unsigned char",
+      "short",     "signed short",     "unsigned short",
+      "long",      "signed long",      "unsigned long",
+      "long long", "signed long long", "unsigned long long",
+      "float",     "double",           "ap_int",
+      "ap_uint"};
 };
 
 #endif  // TRUNK_SOURCE_OPT_TOOLS_INCLUDE_MEMORY_COALESCING_XILINX_H_

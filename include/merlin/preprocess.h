@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 
 #include <map>
@@ -35,7 +44,6 @@ class PreProcess {
   bool mValid;
   enum effort mEffort;
   set<string> mHeaderFileReported;
-  std::unordered_map<string, string> def_directive_map_;
 
  public:
   PreProcess(CSageCodeGen *codegen, void *pTopFunc,
@@ -49,7 +57,8 @@ class PreProcess {
 
   bool run();
 
-  bool processPragma();
+  bool processPragma(bool pragma_in_loop);
+  bool parseHLSPragma(bool pragma_in_loop);
   void build_mars_ir(bool check_pragma, bool pragma_in_loop, bool build_node);
 
   void pre_check();
@@ -104,9 +113,9 @@ class PreProcess {
 
   void checkReferenceType();
 
-  void check_func_decl(CSageCodeGen *codegen, void *pTopFunc);
+  // void check_func_decl(CSageCodeGen *codegen, void *pTopFunc);
 
-  void check_old_style(CSageCodeGen *codegen, void *pTopFunc);
+  // void check_old_style(CSageCodeGen *codegen, void *pTopFunc);
 
   void check_user_defined_type_outside_header_file(CSageCodeGen *codegen,
                                                    void *pTopFunc);
@@ -169,19 +178,4 @@ class PreProcess {
   void check_result();
 
   void check_loop_special_syntax(void *sg_loop);
-
-  void ExpandDefineDirectiveInPragma();
-
- private:
-  void ScanDefineDirectives();
-  void SetDefineDirectives(string);
-  void EmbedRecursiveDefines();
-  int EvaluatePragmaAttributes();
-  void ReplaceTokens(vector<string> &, string);
-  bool HasDefNameToken(vector<string> &, std::unordered_set<string> &);
-  bool HasInvalidCalcChar(string &);
-  int64_t Calculate(string &);
-  int64_t ParseExpr(string &, int &);
-  int64_t ParseNum(string &, int &);
-  void StripComments(string &);
 };

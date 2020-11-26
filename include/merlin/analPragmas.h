@@ -1,3 +1,13 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights
+ *reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #ifndef TRUNK_SOURCE_OPT_TOOLS_INCLUDE_ANALPRAGMAS_H_
 #define TRUNK_SOURCE_OPT_TOOLS_INCLUDE_ANALPRAGMAS_H_
 #include <list>
@@ -15,7 +25,6 @@ struct pragma_tag {
   bool pipeline;
   bool parallel;
   bool loop_tiling;
-  bool pipe_parallel;
   bool burst;
   bool task;
   bool kernel;
@@ -46,6 +55,8 @@ class CAnalPragma {
   SgNode *location;
   pragma_tag opt_tag;
   std::string m_pragma_type;
+  std::string m_cmd;
+  std::string m_vendor;
   bool m_hls_fgopt;
 
  public:
@@ -53,9 +64,10 @@ class CAnalPragma {
       : m_ast(codegen), m_ref(nullptr), location(nullptr) {
     opt_clear();
   }
-  bool PragmasFrontendProcessing(void *decl, bool *errorOut,
-                                 bool check = false);
+  bool PragmasFrontendProcessing(void *decl, bool *errorOut, bool check = false,
+                                 bool vendor_pragma = false);
   void opt_clear();
+  std::string get_hls_interface_mode() const;
   std::string get_task_name();
   bool is_hls_fg_opt() { return m_hls_fgopt; }
   //  Interface
@@ -64,15 +76,18 @@ class CAnalPragma {
   void *update_pragma(void *decl, bool keep_old, void *scope);
   std::string print_attribute();
   std::string get_attribute(std::string attr);
+  std::string get_pragma_type() { return m_cmd; }
+  std::string get_vendor_type() { return m_vendor; }
   void remove_attribute(std::string attr);
   bool is_hls_pragma(std::string filter);
+  bool is_hls_pragma();
   void set_pragma_type(std::string pragma_type);
   std::map<std::string, std::string> get_attribute();
 
   bool is_loop_related() const {
-    return opt_tag.pipeline || opt_tag.parallel || opt_tag.pipe_parallel ||
-           opt_tag.loop_tiling || opt_tag.spawn || opt_tag.false_dep ||
-           opt_tag.loop_flatten || opt_tag.loop_tiled_tag ||
+    return opt_tag.pipeline || opt_tag.parallel || opt_tag.loop_tiling ||
+           opt_tag.spawn || opt_tag.false_dep || opt_tag.loop_flatten ||
+           opt_tag.loop_tiled_tag || opt_tag.hls_unroll ||
            //   opt_tag.reduction || opt_tag.line_buffer;
            opt_tag.reduction || opt_tag.line_buffer || opt_tag.partition;
   }
@@ -82,7 +97,6 @@ class CAnalPragma {
   bool is_cache() { return opt_tag.cache; }
   bool is_pipeline() { return opt_tag.pipeline; }
   bool is_parallel() { return opt_tag.parallel; }
-  bool is_pipe_para() { return opt_tag.pipe_parallel; }
   bool is_loop_tiling() { return opt_tag.loop_tiling; }
   bool is_loop_flatten() { return opt_tag.loop_flatten; }
   bool is_false_dep() { return opt_tag.false_dep; }
@@ -110,7 +124,7 @@ class CAnalPragma {
 
  protected:
   bool parse_pragma(void *decl, std::string *diagnosis_info,
-                    bool report = false);
+                    bool report = false, bool vendor_pragma = false);
   bool isPipelinePragma(SgPragmaDeclaration *decl);
   bool isLoopTilingPragma(SgPragmaDeclaration *decl);
   bool isPipe_ParallelPragma(SgPragmaDeclaration *decl);

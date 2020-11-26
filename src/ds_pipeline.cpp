@@ -18,7 +18,9 @@ void DsGenerator::BuildPipeline(void *scope_stmt,
       }
     }
     if (isFineGrained) {
-      options.pop_back();
+      // options.pop_back();
+      // let auto-parallel do the job
+      return;
     }
  
     /// options refers to Design Space.

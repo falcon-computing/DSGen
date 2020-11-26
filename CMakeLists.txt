@@ -14,6 +14,8 @@ endif()
 endmacro(LoadEnv)
 
 LoadEnv("LLVM_ROOT_DIR"       "LLVM")
+LoadEnv("GCC_ROOT_DIR"        "GCC")
+LoadEnv("BOOST_ROOT"          "BOOST")
 LoadEnv("CLANG_ROOT_DIR"      "Clang")
 LoadEnv("ROSE_ROOT_DIR"       "ROSE")
 LoadEnv("RAPIDJSON_ROOT_DIR"  "RapidJSON")
@@ -25,17 +27,13 @@ set(CMAKE_CXX_COMPILER "${LLVM_ROOT_DIR}/bin/clang++")
 project(DsGenerator)
 
 # For FindLLVM and FindBoost
-find_package(Boost 1.53 REQUIRED
+find_package(Boost 1.67 REQUIRED
               COMPONENTS regex filesystem thread system)
+find_package(JNI REQUIRED)
 find_package(Threads)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/Modules")
 find_package(LLVM REQUIRED)
-
-# For FindJSONCPP
-find_package(JsonCPP REQUIRED)
-include_directories(${JsonCPP_INCLUDE_DIRS})
-link_directories(${JsonCPP_LIBRARY_DIRS})
 
 # Google Test
 configure_file(${CMAKE_MODULE_PATH}/FindGoogleTest.cmake googletest-download/CMakeLists.txt)
@@ -50,23 +48,6 @@ execute_process(COMMAND ${CMAKE_COMMAND} --build .
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
 if(result)
   message(FATAL_ERROR "Build step for googletest failed: ${result}")
-endif()
-
-# Prevent overriding the parent project's compiler/linker
-# settings on Windows
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-# Add googletest directly to our build. This defines
-# the gtest and gtest_main targets.
-add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
-                 ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
-                 EXCLUDE_FROM_ALL)
-
-# The gtest/gtest_main targets carry header search path
-# dependencies automatically when using CMake 2.8.11 or
-# later. Otherwise we have to add them here ourselves.
-if (CMAKE_VERSION VERSION_LESS 2.8.11)
-  include_directories("${gtest_SOURCE_DIR}/include")
 endif()
 
 # find docker executable
@@ -107,9 +88,28 @@ message(STATUS "build version date: ${BUILD_DATE}")
 set(CMAKE_CXX_FLAGS "-Wall -Wno-c++17-extensions")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_VERSION=\"\\\"${BUILD_VERSION}\"\\\"")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_DATE=\"\\\"${BUILD_DATE}\"\\\"")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --gcc-toolchain=${GCC_ROOT_DIR}")
 
 set(CMAKE_CXX_FLAGS_DEBUG "-DPROJDEBUG=1 -std=c++14 -O0 -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "-DPROJDEBUG=1 -std=c++14 -O3")
+
+# Prevent overriding the parent project's compiler/linker
+# settings on Windows
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+# Add googletest directly to our build. This defines
+# the gtest and gtest_main targets.
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
+                 ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
+                 EXCLUDE_FROM_ALL)
+
+# The gtest/gtest_main targets carry header search path
+# dependencies automatically when using CMake 2.8.11 or
+# later. Otherwise we have to add them here ourselves.
+if (CMAKE_VERSION VERSION_LESS 2.8.11)
+  include_directories("${gtest_SOURCE_DIR}/include")
+endif()
+
 
 option(COVERAGE "Build with coverage report" OFF)
 if(COVERAGE)
@@ -127,16 +127,15 @@ include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/merlin"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/merlin/legacy/ir"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/merlin/legacy/parsers"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/jsoncpp/"
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${ROSE_ROOT_DIR}/include/rose"
-    "${JsonCPP_INCLUDE_DIRS}"
     "${RAPIDJSON_ROOT_DIR}"
 )
 
 link_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}/lib"
     "${ROSE_ROOT_DIR}/lib"
-    "${JsonCPP_LIBRARY_DIRS}"
     "${Boost_LIBRARY_DIRS}"
 )
 
@@ -149,7 +148,7 @@ add_executable(ds_generator
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_bitwidth_opt.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/dse_utils.cpp"
 )
-add_dependencies(ds_generator JsonCPP)
+#add_dependencies(ds_generator JsonCPP)
 
 add_executable(ds_generator_test
     "${CMAKE_CURRENT_SOURCE_DIR}/test/unit_test.cpp"
@@ -160,7 +159,7 @@ add_executable(ds_generator_test
     "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_bitwidth_opt.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/dse_utils.cpp"
 )
-add_dependencies(ds_generator_test JsonCPP)
+#add_dependencies(ds_generator_test JsonCPP)
 
 set_target_properties(ds_generator PROPERTIES
     LINKER_LANGUAGE CXX
@@ -185,32 +184,37 @@ set_target_properties(ds_generator PROPERTIES
     -DHAS_DS_SKELETON_EXTRACT -DHAS_LINE_BUFFER")
 
 target_link_libraries(ds_generator
-  mars_rose
-  mars_opt_utils
   Ir
   IdUpdate 
+  KernelSeparate
+  mars_rose
+  KernelSeparate
+  mars_opt_utils
   legacy_ir 
   legacy_parsers
   rose
   ${Boost_LIBRARIES}
-  ${JsonCPP_LIBRARIES}
+  jsoncpp
   ${CMAKE_DL_LIBS} 
   ${CMAKE_THREAD_LIBS_INIT}
 )
 
 target_link_libraries(ds_generator_test
   gtest_main
-  mars_rose
-  mars_opt_utils
   Ir
   IdUpdate 
+  KernelSeparate
+  mars_rose
+  KernelSeparate
+  mars_opt_utils
   legacy_ir 
   legacy_parsers
   rose
-  ${Boost_LIBRARIES}
-  ${JsonCPP_LIBRARIES}
+  jsoncpp
   ${CMAKE_DL_LIBS} 
   ${CMAKE_THREAD_LIBS_INIT}
+  ${Boost_LIBRARIES}
+  ${JNI_LIBRARIES}
 )
 
 enable_testing()

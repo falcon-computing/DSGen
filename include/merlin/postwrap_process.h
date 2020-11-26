@@ -1,3 +1,12 @@
+/************************************************************************************
+ *  (c) Copyright 2014-2020 Falcon Computing Solutions, Inc. All rights reserved.
+ *
+ *  This file contains confidential and proprietary information
+ *  of Falcon Computing Solutions, Inc. and is protected under U.S. and
+ *  international copyright and other intellectual property laws.
+ *
+ ************************************************************************************/
+
 #pragma once
 
 #include <map>
@@ -48,4 +57,5 @@ int global_variable_conversion_checker(CSageCodeGen *codegen, void *pTopFunc,
 
 void collect_used_global_variable(void *scope, set<void *> *s_global,
                                   map<void *, set<void *>> *var2refs,
-                                  CSageCodeGen *ast);
+                                  CSageCodeGen *ast, bool *errorOut,
+                                  bool hls_flow);
