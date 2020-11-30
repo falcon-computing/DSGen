@@ -55,4 +55,6 @@ To run unit tests:
   
     $ ctest
 
-
+## Run DSGen
+    $ export PATH=/path/to/merlin_compiler/bin:/path/to/dsgen/build/bin:$PATH
+    $ ds_generator example.cpp
